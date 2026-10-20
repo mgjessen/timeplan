@@ -6,33 +6,25 @@ const WEEKDAYS = [
   { key: "fre", label: "Fredag", short: "Fre" },
 ];
 
-const PEOPLE = ["ole", "maja"]; // 8A, 10A
+const PEOPLE = ["ole", "maja"];
 
 const COLORS = [
-  "green",
-  "lightGreen",
-  "brown",
-  "yellow",
-  "purple",
-  "darkPurple",
-  "peach",
-  "paleYellow",
-  "blue",
-  "lightBlue",
-  "cyan",
-  "magenta",
-  "orange",
-  "pink",
-  "greyBlue",
-  "grey",
-  "darkGrey",
-  "red",
-  "white",
+  { key: "red", label: "Rød" },
+  { key: "orange", label: "Oransje" },
+  { key: "yellow", label: "Gul" },
+  { key: "green", label: "Grønn" },
+  { key: "blue", label: "Blå" },
+  { key: "purple", label: "Lilla" },
+  { key: "pink", label: "Rosa" },
+  { key: "brown", label: "Brun" },
+  { key: "grey", label: "Grå" },
+  { key: "white", label: "Hvit" },
 ];
+
+const COLOR_KEYS = COLORS.map((c) => c.key);
 
 const els = {
   status: document.getElementById("status"),
-  schoolYear: document.getElementById("school-year"),
   personTabs: document.getElementById("person-tabs"),
   dayTabs: document.getElementById("day-tabs"),
   viewActions: document.getElementById("view-actions"),
@@ -40,8 +32,6 @@ const els = {
   btnEdit: document.getElementById("btn-edit"),
   btnCancel: document.getElementById("btn-cancel"),
   btnSave: document.getElementById("btn-save"),
-  scheduleTitle: document.getElementById("schedule-title"),
-  scheduleSub: document.getElementById("schedule-sub"),
   scheduleRoot: document.getElementById("schedule-root"),
   nameEdit: document.getElementById("name-edit"),
   nameInput: document.getElementById("name-input"),
@@ -54,11 +44,9 @@ let saving = false;
 let activePerson = "ole";
 let activeDay = defaultDayKey();
 
-/** Current school day, or next day after 15:00. Weekend → Monday. */
 function defaultDayKey(now = new Date()) {
   let jsDay = now.getDay();
-  const hour = now.getHours();
-  if (hour >= 15) jsDay = (jsDay + 1) % 7;
+  if (now.getHours() >= 15) jsDay = (jsDay + 1) % 7;
   if (jsDay === 0 || jsDay === 6) return "man";
   return WEEKDAYS[jsDay - 1].key;
 }
@@ -74,7 +62,7 @@ function clone(data) {
 }
 
 function colorClass(color) {
-  const key = COLORS.includes(color) ? color : "white";
+  const key = COLOR_KEYS.includes(color) ? color : "white";
   return `bg-${key}`;
 }
 
@@ -91,12 +79,58 @@ function displayName(person) {
 }
 
 function splitTabLabel(name) {
-  // "Haumyrheia 8A" → school + class for compact tabs
-  const m = String(name || "").trim().match(/^(.*?)(\s+)(\d+\s*[A-Za-zÆØÅæøå]?)$/);
-  if (m) {
-    return { school: m[1].trim(), klass: m[3].trim() };
-  }
+  const m = String(name || "")
+    .trim()
+    .match(/^(.*?)(\s+)(\d+\s*[A-Za-zÆØÅæøå]?)$/);
+  if (m) return { school: m[1].trim(), klass: m[3].trim() };
   return { school: "", klass: String(name || "").trim() };
+}
+
+function formatTime(t) {
+  return String(t || "").replace(":", ".");
+}
+
+function slotDisplayLabel(slot) {
+  if (slot.start && slot.end) {
+    return `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
+  }
+  return slot.label || "";
+}
+
+/** First lesson with subject → start; last with subject → end */
+function dayBounds(person, dayKey) {
+  let start = "";
+  let end = "";
+  for (const slot of person.slots || []) {
+    if (slot.type !== "lesson") continue;
+    const cell = person.grid?.[slot.id]?.[dayKey];
+    if (!cell?.subject) continue;
+    if (!start && slot.start) start = slot.start;
+    if (slot.end) end = slot.end;
+  }
+  return { start, end };
+}
+
+function subjectColor(person, subject, fallback = "white") {
+  if (!subject) return fallback;
+  const map = person.subjectColors || {};
+  if (map[subject]) return map[subject];
+  return COLOR_KEYS.includes(fallback) ? fallback : "white";
+}
+
+function applySubjectColor(personKey, subject, color) {
+  if (!draft || !subject) return;
+  const person = draft[personKey];
+  if (!person.subjectColors) person.subjectColors = {};
+  person.subjectColors[subject] = color;
+  for (const slot of person.slots || []) {
+    const row = person.grid?.[slot.id];
+    if (!row) continue;
+    for (const day of WEEKDAYS) {
+      const cell = row[day.key];
+      if (cell?.subject === subject) cell.color = color;
+    }
+  }
 }
 
 async function loadSchedules() {
@@ -124,22 +158,16 @@ function render() {
   const data = current();
   if (!data) return;
 
-  els.schoolYear.textContent = data.schoolYear || "2026/2027";
   const person = data[activePerson];
   const name = displayName(person);
 
   renderPersonTabs(data);
-  els.scheduleTitle.textContent = name;
-  els.scheduleSub.textContent =
-    activePerson === "ole" ? "Fag, rom og lærer" : "Fag med farger";
 
   els.nameEdit.hidden = !editing;
-  if (editing) {
-    els.nameInput.value = name;
-  }
+  if (editing) els.nameInput.value = name;
 
-  renderDayTabs(data.dayEnds?.[activePerson] || {});
-  renderSingleDay(activePerson, person, data.dayEnds?.[activePerson] || {});
+  renderDayTabs(person);
+  renderSingleDay(activePerson, person);
 
   document.body.classList.toggle("is-editing", editing);
   els.viewActions.hidden = editing;
@@ -159,111 +187,173 @@ function renderPersonTabs(data) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "tab" + (key === activePerson ? " is-active" : "");
-    btn.dataset.person = key;
     btn.setAttribute("aria-selected", String(key === activePerson));
     btn.setAttribute("aria-label", name);
-
     if (parts.school) {
       btn.appendChild(el("span", "tab-school", parts.school));
       btn.appendChild(el("span", "tab-class", parts.klass));
     } else {
       btn.appendChild(el("span", "tab-class", parts.klass || name));
     }
-
     btn.addEventListener("click", () => setActivePerson(key));
     root.appendChild(btn);
   }
 }
 
-function renderDayTabs(ends) {
+function renderDayTabs(person) {
   const root = els.dayTabs;
   root.innerHTML = "";
 
   for (const day of WEEKDAYS) {
+    const bounds = dayBounds(person, day.key);
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "day-tab" + (day.key === activeDay ? " is-active" : "");
     btn.setAttribute("aria-pressed", String(day.key === activeDay));
     btn.setAttribute("aria-label", day.label);
     btn.appendChild(el("span", "d", day.short));
-
-    const endVal = ends[day.key] || "";
-    if (editing) {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.inputMode = "numeric";
-      input.className = "day-end-input";
-      input.value = endVal;
-      input.setAttribute("aria-label", `${activePerson} ${day.label} slutt`);
-      input.addEventListener("click", (e) => e.stopPropagation());
-      input.addEventListener("input", () => {
-        draft.dayEnds[activePerson][day.key] = input.value;
-      });
-      btn.appendChild(input);
-    } else {
-      btn.appendChild(el("span", "t", endVal || "—"));
-    }
-
+    btn.appendChild(el("span", "t start", formatTime(bounds.start) || "—"));
+    btn.appendChild(el("span", "t end", formatTime(bounds.end) || "—"));
     btn.addEventListener("click", () => setActiveDay(day.key));
     root.appendChild(btn);
   }
 }
 
-function renderSingleDay(personKey, personData, dayEnds) {
+function renderSingleDay(personKey, personData) {
   const root = els.scheduleRoot;
   root.innerHTML = "";
 
   const day = dayMeta(activeDay);
+  const bounds = dayBounds(personData, day.key);
   const card = document.createElement("article");
   card.className = "day-card";
 
   const head = document.createElement("div");
   head.className = "day-card-head";
   head.appendChild(el("h3", null, day.label));
-  const end = dayEnds[day.key];
-  if (end) head.appendChild(el("span", "ends", `Slutt ${end}`));
+  const range = document.createElement("span");
+  range.className = "ends";
+  if (bounds.start || bounds.end) {
+    range.textContent = `${formatTime(bounds.start) || "?"} – ${formatTime(bounds.end) || "?"}`;
+  } else {
+    range.textContent = "Ingen timer";
+  }
+  head.appendChild(range);
   card.appendChild(head);
 
   const list = document.createElement("div");
   list.className = "lesson-list";
 
-  for (const slot of personData.slots || []) {
+  (personData.slots || []).forEach((slot, slotIndex) => {
     if (slot.type !== "lesson") {
-      const br = document.createElement("div");
-      br.className = "break-row";
-      br.textContent =
-        slot.type === "lunsj"
-          ? `Lunsj · ${slot.label}`
-          : slot.type === "pause"
-            ? `Pause · ${slot.label}`
-            : slot.label;
-      list.appendChild(br);
-      continue;
+      list.appendChild(renderBreakRow(personKey, slot, slotIndex));
+      return;
     }
 
     const cellData = personData.grid?.[slot.id]?.[day.key] ?? null;
     const row = document.createElement("div");
     row.className = "lesson";
 
-    const time = document.createElement("div");
-    time.className = "lesson-time";
-    if (slot.n) time.appendChild(el("span", "n", String(slot.n)));
-    time.appendChild(el("span", "lbl", slot.label));
-    row.appendChild(time);
+    row.appendChild(renderTimeCell(personKey, slot, slotIndex));
 
     if (editing) {
       row.appendChild(renderEditCell(personKey, slot, day.key, cellData));
     } else {
-      row.appendChild(renderViewCell(cellData));
+      row.appendChild(renderViewCell(personData, cellData));
     }
     list.appendChild(row);
-  }
+  });
 
   card.appendChild(list);
   root.appendChild(card);
 }
 
-function renderViewCell(cellData) {
+function renderBreakRow(personKey, slot, slotIndex) {
+  const br = document.createElement("div");
+  br.className = "break-row";
+  if (editing) {
+    br.classList.add("break-edit");
+    const kind = el(
+      "span",
+      "break-kind",
+      slot.type === "lunsj" ? "Lunsj" : slot.type === "pause" ? "Pause" : "Pause"
+    );
+    const start = document.createElement("input");
+    start.type = "text";
+    start.inputMode = "numeric";
+    start.placeholder = "Start";
+    start.value = slot.start || "";
+    start.addEventListener("input", () => {
+      draft[personKey].slots[slotIndex].start = start.value;
+      syncSlotLabel(personKey, slotIndex);
+      renderDayTabs(draft[personKey]);
+    });
+    const end = document.createElement("input");
+    end.type = "text";
+    end.inputMode = "numeric";
+    end.placeholder = "Slutt";
+    end.value = slot.end || "";
+    end.addEventListener("input", () => {
+      draft[personKey].slots[slotIndex].end = end.value;
+      syncSlotLabel(personKey, slotIndex);
+      renderDayTabs(draft[personKey]);
+    });
+    br.append(kind, start, end);
+  } else {
+    const kind =
+      slot.type === "lunsj" ? "Lunsj" : slot.type === "pause" ? "Pause" : slot.label;
+    br.textContent = slot.start && slot.end
+      ? `${kind} · ${slotDisplayLabel(slot)}`
+      : kind;
+  }
+  return br;
+}
+
+function renderTimeCell(personKey, slot, slotIndex) {
+  const time = document.createElement("div");
+  time.className = "lesson-time";
+  if (slot.n) time.appendChild(el("span", "n", String(slot.n)));
+
+  if (editing) {
+    const start = document.createElement("input");
+    start.type = "text";
+    start.inputMode = "numeric";
+    start.className = "time-input";
+    start.placeholder = "08:15";
+    start.value = slot.start || "";
+    start.setAttribute("aria-label", "Starttid");
+    start.addEventListener("input", () => {
+      draft[personKey].slots[slotIndex].start = start.value;
+      syncSlotLabel(personKey, slotIndex);
+      renderDayTabs(draft[personKey]);
+    });
+    const end = document.createElement("input");
+    end.type = "text";
+    end.inputMode = "numeric";
+    end.className = "time-input";
+    end.placeholder = "09:15";
+    end.value = slot.end || "";
+    end.setAttribute("aria-label", "Sluttid");
+    end.addEventListener("input", () => {
+      draft[personKey].slots[slotIndex].end = end.value;
+      syncSlotLabel(personKey, slotIndex);
+      renderDayTabs(draft[personKey]);
+    });
+    time.append(start, end);
+  } else {
+    time.appendChild(el("span", "lbl", slotDisplayLabel(slot)));
+  }
+  return time;
+}
+
+function syncSlotLabel(personKey, slotIndex) {
+  const slot = draft[personKey].slots[slotIndex];
+  if (slot.start && slot.end) {
+    slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
+  }
+}
+
+function renderViewCell(personData, cellData) {
   const body = document.createElement("div");
   body.className = "lesson-body";
 
@@ -273,7 +363,8 @@ function renderViewCell(cellData) {
     return body;
   }
 
-  body.classList.add(colorClass(cellData.color));
+  const color = subjectColor(personData, cellData.subject, cellData.color);
+  body.classList.add(colorClass(color));
   body.appendChild(el("span", "subject", cellData.subject));
   if (cellData.room || cellData.teacher) {
     const parts = [];
@@ -305,20 +396,63 @@ function renderEditCell(person, slot, dayKey, cellData) {
   subject.className = "subject-input";
   subject.placeholder = "Fag";
   subject.value = cellData?.subject || "";
-  subject.addEventListener("input", () => {
-    ensure().subject = subject.value;
-  });
 
   const color = document.createElement("select");
+  color.className = "color-select";
   for (const c of COLORS) {
     const opt = document.createElement("option");
-    opt.value = c;
-    opt.textContent = c;
-    if ((cellData?.color || "white") === c) opt.selected = true;
+    opt.value = c.key;
+    opt.textContent = c.label;
     color.appendChild(opt);
   }
+  const initialSubject = cellData?.subject || "";
+  color.value = subjectColor(
+    draft[person],
+    initialSubject,
+    cellData?.color || "white"
+  );
+
+  subject.addEventListener("input", () => {
+    const cell = ensure();
+    const prev = cell.subject;
+    cell.subject = subject.value.trim();
+    if (cell.subject) {
+      const mapped = subjectColor(draft[person], cell.subject, cell.color || "white");
+      cell.color = mapped;
+      color.value = mapped;
+    }
+    // If renaming away from old subject, day bounds update
+    renderDayTabs(draft[person]);
+  });
+
+  subject.addEventListener("change", () => {
+    const cell = ensure();
+    cell.subject = subject.value.trim();
+    if (cell.subject) {
+      const mapped = subjectColor(draft[person], cell.subject, color.value);
+      cell.color = mapped;
+      applySubjectColor(person, cell.subject, mapped);
+      color.value = mapped;
+    }
+    renderDayTabs(draft[person]);
+  });
+
   color.addEventListener("change", () => {
-    ensure().color = color.value;
+    const cell = ensure();
+    cell.color = color.value;
+    const subj = (subject.value || cell.subject || "").trim();
+    if (subj) {
+      cell.subject = subj;
+      applySubjectColor(person, subj, color.value);
+      // Keep other open color selects for same subject in sync
+      document.querySelectorAll(".lesson-body.edit-cell").forEach((wrap) => {
+        const subInput = wrap.querySelector(".subject-input");
+        const sel = wrap.querySelector(".color-select");
+        if (subInput && sel && subInput.value.trim() === subj) {
+          sel.value = color.value;
+        }
+      });
+    }
   });
 
   body.append(subject, color);
@@ -352,6 +486,9 @@ function el(tag, className, text) {
 function enterEdit() {
   if (!schedules) return;
   draft = clone(schedules);
+  for (const key of PEOPLE) {
+    if (!draft[key].subjectColors) draft[key].subjectColors = {};
+  }
   editing = true;
   setStatus("Redigeringsmodus — husk å lagre.");
   render();
@@ -364,21 +501,20 @@ function cancelEdit() {
   render();
 }
 
-function applyNameFromInput() {
-  if (!draft || !els.nameInput) return;
-  const value = els.nameInput.value.trim();
-  if (!value) return;
-  draft[activePerson].name = value;
-  draft[activePerson].title = value;
-}
-
 function sanitize(data) {
   const out = clone(data);
   for (const person of PEOPLE) {
     const name = String(out[person].name || "").trim() || out[person].title;
     out[person].name = name;
     out[person].title = name;
+    if (!out[person].subjectColors) out[person].subjectColors = {};
+
     for (const slot of out[person].slots) {
+      slot.start = String(slot.start || "").trim();
+      slot.end = String(slot.end || "").trim();
+      if (slot.start && slot.end) {
+        slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
+      }
       const row = out[person].grid[slot.id] || {};
       for (const day of WEEKDAYS) {
         const cell = row[day.key];
@@ -392,12 +528,28 @@ function sanitize(data) {
         if (!subject && !room && !teacher) {
           row[day.key] = null;
         } else {
-          row[day.key] = { subject, color: cell.color || "white" };
+          let color = cell.color || "white";
+          if (subject && out[person].subjectColors[subject]) {
+            color = out[person].subjectColors[subject];
+          } else if (subject && color && color !== "white") {
+            out[person].subjectColors[subject] = color;
+          }
+          row[day.key] = { subject, color };
           if (room) row[day.key].room = room;
           if (teacher) row[day.key].teacher = teacher;
         }
       }
       out[person].grid[slot.id] = row;
+    }
+
+    // Final sync: all cells of a subject share color
+    for (const slot of out[person].slots) {
+      for (const day of WEEKDAYS) {
+        const cell = out[person].grid[slot.id]?.[day.key];
+        if (cell?.subject && out[person].subjectColors[cell.subject]) {
+          cell.color = out[person].subjectColors[cell.subject];
+        }
+      }
     }
   }
   return out;
@@ -405,7 +557,10 @@ function sanitize(data) {
 
 async function saveEdit() {
   if (!draft || saving) return;
-  applyNameFromInput();
+  if (els.nameInput?.value.trim()) {
+    draft[activePerson].name = els.nameInput.value.trim();
+    draft[activePerson].title = draft[activePerson].name;
+  }
   saving = true;
   setStatus("Lagrer…");
   render();
@@ -437,8 +592,6 @@ els.nameInput.addEventListener("input", () => {
   const value = els.nameInput.value;
   draft[activePerson].name = value;
   draft[activePerson].title = value;
-  // live-update title + tabs while typing
-  els.scheduleTitle.textContent = value || "Klasse";
   renderPersonTabs(draft);
 });
 

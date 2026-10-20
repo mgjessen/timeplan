@@ -7,7 +7,19 @@ const DATA_DIR = path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "schedules.json");
 const SEED_FILE = path.join(DATA_DIR, "seed.json");
 const WEEKDAYS = ["man", "tir", "ons", "tor", "fre"];
-const DATA_VERSION = 3;
+const DATA_VERSION = 4;
+const BASIC_COLORS = new Set([
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "purple",
+  "pink",
+  "brown",
+  "grey",
+  "white",
+]);
 
 function loadSeed() {
   return JSON.parse(fs.readFileSync(SEED_FILE, "utf8"));
@@ -17,7 +29,8 @@ function withMeta(seed) {
   return {
     version: DATA_VERSION,
     schoolYear: seed.schoolYear,
-    dayEnds: seed.dayEnds,
+    dayEnds: seed.dayEnds || { maja: {}, ole: {} },
+    dayStarts: seed.dayStarts || { maja: {}, ole: {} },
     maja: seed.maja,
     ole: seed.ole,
   };
@@ -38,8 +51,7 @@ function ensureData() {
       !parsed ||
       parsed.version !== DATA_VERSION ||
       !parsed.maja?.grid ||
-      !parsed.ole?.grid ||
-      !parsed.dayEnds
+      !parsed.ole?.grid
     ) {
       fs.writeFileSync(DATA_FILE, JSON.stringify(seed, null, 2), "utf8");
       return structuredClone(seed);
@@ -64,15 +76,34 @@ function writeSchedules(data) {
   fs.renameSync(tmp, DATA_FILE);
 }
 
+function normalizeColor(color) {
+  const c = String(color || "white").trim();
+  return BASIC_COLORS.has(c) ? c : "white";
+}
+
+function normalizeTime(value) {
+  const raw = String(value || "").trim().replace(".", ":");
+  const m = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return String(value || "").trim().slice(0, 8);
+  return `${m[1].padStart(2, "0")}:${m[2]}`;
+}
+
+function slotLabel(start, end, fallback) {
+  if (start && end) {
+    return `${start.replace(":", ".")} - ${end.replace(":", ".")}`;
+  }
+  return String(fallback || "").slice(0, 40);
+}
+
 function normalizeCell(cell) {
   if (cell == null) return null;
   if (typeof cell !== "object") return null;
   const subject = String(cell.subject || "").trim().slice(0, 80);
   const room = String(cell.room || "").trim().slice(0, 40);
   const teacher = String(cell.teacher || "").trim().slice(0, 80);
-  const color = String(cell.color || "white").trim().slice(0, 32);
+  const color = normalizeColor(cell.color);
   if (!subject && !room && !teacher) return null;
-  const out = { subject, color: color || "white" };
+  const out = { subject, color };
   if (room) out.room = room;
   if (teacher) out.teacher = teacher;
   return out;
@@ -86,23 +117,26 @@ function normalizePerson(input, fallback) {
       ? input.name.trim().slice(0, 60)
       : base.name;
   base.name = name;
-  // Title follows the editable display name unless an explicit title is sent
-  if (typeof input.title === "string" && input.title.trim()) {
-    base.title = input.title.trim().slice(0, 80);
-  } else {
-    base.title = name;
+  base.title = name;
+  if (typeof input.klass === "string") {
+    base.klass = input.klass.trim().slice(0, 20);
   }
-  if (typeof input.klass === "string") base.klass = input.klass.trim().slice(0, 20);
 
   if (Array.isArray(input.slots) && input.slots.length) {
-    base.slots = input.slots.map((s, i) => ({
-      id: String(s.id || `slot-${i}`).slice(0, 32),
-      n: typeof s.n === "number" ? s.n : undefined,
-      label: String(s.label || "").slice(0, 40),
-      type: ["lesson", "break", "pause", "lunsj"].includes(s.type)
-        ? s.type
-        : "lesson",
-    }));
+    base.slots = input.slots.map((s, i) => {
+      const start = normalizeTime(s.start);
+      const end = normalizeTime(s.end);
+      return {
+        id: String(s.id || `slot-${i}`).slice(0, 32),
+        n: typeof s.n === "number" ? s.n : undefined,
+        start,
+        end,
+        label: slotLabel(start, end, s.label),
+        type: ["lesson", "break", "pause", "lunsj"].includes(s.type)
+          ? s.type
+          : "lesson",
+      };
+    });
   }
 
   const slotIds = base.slots.map((s) => s.id);
@@ -115,24 +149,31 @@ function normalizePerson(input, fallback) {
     }
   }
   base.grid = grid;
-  return base;
-}
 
-function normalizeDayEnds(input, fallback) {
-  const out = {
-    days: [...WEEKDAYS],
-    maja: { ...fallback.maja },
-    ole: { ...fallback.ole },
-  };
-  for (const person of ["maja", "ole"]) {
+  const subjectColors = {};
+  const incoming =
+    input.subjectColors && typeof input.subjectColors === "object"
+      ? input.subjectColors
+      : base.subjectColors || {};
+  for (const [subj, color] of Object.entries(incoming)) {
+    const key = String(subj || "").trim().slice(0, 80);
+    if (key) subjectColors[key] = normalizeColor(color);
+  }
+  // Sync: every cell with a subject gets the subject color
+  for (const id of slotIds) {
     for (const day of WEEKDAYS) {
-      const val = input?.[person]?.[day];
-      if (typeof val === "string" && val.trim()) {
-        out[person][day] = val.trim().slice(0, 8);
+      const cell = grid[id][day];
+      if (!cell?.subject) continue;
+      if (!subjectColors[cell.subject] && cell.color) {
+        subjectColors[cell.subject] = normalizeColor(cell.color);
+      }
+      if (subjectColors[cell.subject]) {
+        cell.color = subjectColors[cell.subject];
       }
     }
   }
-  return out;
+  base.subjectColors = subjectColors;
+  return base;
 }
 
 function normalizeAll(body) {
@@ -146,7 +187,6 @@ function normalizeAll(body) {
       typeof body.schoolYear === "string" && body.schoolYear.trim()
         ? body.schoolYear.trim()
         : seed.schoolYear,
-    dayEnds: normalizeDayEnds(body.dayEnds, seed.dayEnds),
     maja,
     ole,
   };

@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
@@ -26,44 +26,24 @@
     </div>
 
     <div class="phone-shell">
-      <header class="hero">
-        <p class="eyebrow reveal">
-          Skoleåret <span id="school-year">2026/2027</span>
-        </p>
-        <h1 class="brand reveal delay-1">Timeplan</h1>
-        <p class="lede reveal delay-2">
-          Haumyrheia 8A og 10A — ukeplaner lagret på serveren.
-        </p>
-        <div class="hero-actions reveal delay-3">
-          <a class="btn btn-primary" href="#planer">Se planene</a>
-        </div>
-      </header>
-
       <main id="planer" class="main">
-        <nav class="person-tabs reveal delay-4" id="person-tabs" aria-label="Velg klasse">
-          <!-- filled by app.js -->
-        </nav>
+        <h1 class="app-title">Timeplan</h1>
+
+        <nav class="person-tabs" id="person-tabs" aria-label="Velg klasse"></nav>
 
         <p class="status" id="status" role="status" aria-live="polite"></p>
+
+        <label class="name-edit" id="name-edit" hidden>
+          <span>Klassenavn</span>
+          <input type="text" id="name-input" maxlength="60" />
+        </label>
 
         <nav class="day-tabs" id="day-tabs" aria-label="Velg dag"></nav>
 
         <section class="schedule-section" aria-label="Ukeplan">
-          <header class="person-head">
-            <h2 id="schedule-title">Haumyrheia 8A</h2>
-            <p id="schedule-sub">Fag, rom og lærer</p>
-            <label class="name-edit" id="name-edit" hidden>
-              <span>Klassenavn</span>
-              <input type="text" id="name-input" maxlength="60" />
-            </label>
-          </header>
           <div id="schedule-root" class="day-stack"></div>
         </section>
       </main>
-
-      <footer class="foot">
-        <p>Lagret på serveren</p>
-      </footer>
 
       <div class="action-bar" id="action-bar">
         <div class="toolbar-actions" id="view-actions">

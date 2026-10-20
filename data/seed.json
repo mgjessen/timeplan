@@ -10,7 +10,7 @@
     ],
     "maja": {
       "man": "14:25",
-      "tir": "15:00",
+      "tir": "14:25",
       "ons": "13:15",
       "tor": "14:25",
       "fre": "14:25"
@@ -19,8 +19,8 @@
       "man": "14:25",
       "tir": "14:25",
       "ons": "13:15",
-      "tor": "15:20",
-      "fre": "13:15"
+      "tor": "15:30",
+      "fre": "14:25"
     }
   },
   "maja": {
@@ -30,17 +30,23 @@
       {
         "id": "m1",
         "label": "08.15 - 09.15",
-        "type": "lesson"
+        "type": "lesson",
+        "start": "08:15",
+        "end": "09:15"
       },
       {
         "id": "m2",
         "label": "09.25 - 10.25",
-        "type": "lesson"
+        "type": "lesson",
+        "start": "09:25",
+        "end": "10:25"
       },
       {
         "id": "m3",
         "label": "10.35 - 11.35",
-        "type": "lesson"
+        "type": "lesson",
+        "start": "10:35",
+        "end": "11:35"
       },
       {
         "id": "m-spis",
@@ -50,17 +56,23 @@
       {
         "id": "m4",
         "label": "12.15 - 13.15",
-        "type": "lesson"
+        "type": "lesson",
+        "start": "12:15",
+        "end": "13:15"
       },
       {
         "id": "m5",
         "label": "13.25 - 14.25",
-        "type": "lesson"
+        "type": "lesson",
+        "start": "13:25",
+        "end": "14:25"
       },
       {
         "id": "m6",
         "label": "14.30 - 15.00",
-        "type": "lesson"
+        "type": "lesson",
+        "start": "14:30",
+        "end": "15:00"
       }
     ],
     "grid": {
@@ -71,7 +83,7 @@
         },
         "tir": {
           "subject": "UTV",
-          "color": "paleYellow"
+          "color": "yellow"
         },
         "ons": {
           "subject": "Samfunn",
@@ -123,11 +135,11 @@
         },
         "tor": {
           "subject": "Matte",
-          "color": "magenta"
+          "color": "pink"
         },
         "fre": {
           "subject": "Matte",
-          "color": "magenta"
+          "color": "pink"
         }
       },
       "m-spis": {
@@ -144,7 +156,7 @@
         },
         "tir": {
           "subject": "Matte",
-          "color": "magenta"
+          "color": "pink"
         },
         "ons": {
           "subject": "Språk/Arbeids.l.fag",
@@ -162,11 +174,11 @@
       "m5": {
         "man": {
           "subject": "Heiatimen",
-          "color": "peach"
+          "color": "orange"
         },
         "tir": {
           "subject": "Valgfag",
-          "color": "greyBlue"
+          "color": "grey"
         },
         "ons": null,
         "tor": {
@@ -186,7 +198,20 @@
         "fre": null
       }
     },
-    "klass": "10A"
+    "klass": "10A",
+    "subjectColors": {
+      "Naturfag": "green",
+      "UTV": "yellow",
+      "Samfunn": "orange",
+      "KRLE": "brown",
+      "Engelsk": "blue",
+      "GYM": "yellow",
+      "Matte": "pink",
+      "Musikk": "purple",
+      "Språk/Arbeids.l.fag": "pink",
+      "Heiatimen": "orange",
+      "Valgfag": "grey"
+    }
   },
   "ole": {
     "name": "Haumyrheia 8A",
@@ -196,63 +221,85 @@
       {
         "id": "o1",
         "n": 1,
-        "label": "08:15 – 09:15",
-        "type": "lesson"
+        "label": "08.15 - 09.15",
+        "type": "lesson",
+        "start": "08:15",
+        "end": "09:15"
       },
       {
         "id": "o-p1",
-        "label": "09:15 – 09:25",
-        "type": "pause"
+        "label": "09.15 - 09.25",
+        "type": "pause",
+        "start": "09:15",
+        "end": "09:25"
       },
       {
         "id": "o2",
         "n": 2,
-        "label": "09:25 – 10:25",
-        "type": "lesson"
+        "label": "09.25 - 10.25",
+        "type": "lesson",
+        "start": "09:25",
+        "end": "10:25"
       },
       {
         "id": "o-p2",
-        "label": "10:25 – 10:35",
-        "type": "pause"
+        "label": "10.25 - 10.35",
+        "type": "pause",
+        "start": "10:25",
+        "end": "10:35"
       },
       {
         "id": "o3",
         "n": 3,
-        "label": "10:35 – 11:35",
-        "type": "lesson"
+        "label": "10.35 - 11.35",
+        "type": "lesson",
+        "start": "10:35",
+        "end": "11:35"
       },
       {
         "id": "o-lunsj",
-        "label": "11:35 – 12:15",
-        "type": "lunsj"
+        "label": "11.35 - 12.15",
+        "type": "lunsj",
+        "start": "11:35",
+        "end": "12:15"
       },
       {
         "id": "o4",
         "n": 4,
-        "label": "12:15 – 13:15",
-        "type": "lesson"
+        "label": "12.15 - 13.15",
+        "type": "lesson",
+        "start": "12:15",
+        "end": "13:15"
       },
       {
         "id": "o-p3",
-        "label": "13:15 – 13:25",
-        "type": "pause"
+        "label": "13.15 - 13.25",
+        "type": "pause",
+        "start": "13:15",
+        "end": "13:25"
       },
       {
         "id": "o5",
         "n": 5,
-        "label": "13:25 – 14:25",
-        "type": "lesson"
+        "label": "13.25 - 14.25",
+        "type": "lesson",
+        "start": "13:25",
+        "end": "14:25"
       },
       {
         "id": "o-p4",
-        "label": "14:25 – 14:30",
-        "type": "pause"
+        "label": "14.25 - 14.30",
+        "type": "pause",
+        "start": "14:25",
+        "end": "14:30"
       },
       {
         "id": "o6",
         "n": 6,
-        "label": "14:30 – 15:30",
-        "type": "lesson"
+        "label": "14.30 - 15.30",
+        "type": "lesson",
+        "start": "14:30",
+        "end": "15:30"
       }
     ],
     "grid": {
@@ -261,19 +308,19 @@
           "subject": "KRØ",
           "room": "Gymsal",
           "teacher": "Vetle",
-          "color": "lightGreen"
+          "color": "green"
         },
         "tir": {
           "subject": "Heiatimen - 8A",
           "room": "107",
           "teacher": "Vetle, Anette",
-          "color": "peach"
+          "color": "orange"
         },
         "ons": {
           "subject": "Samf.",
           "room": "107",
           "teacher": "Anette",
-          "color": "cyan"
+          "color": "blue"
         },
         "tor": {
           "subject": "Naturfag",
@@ -319,7 +366,7 @@
           "subject": "Kunst & Håndverk",
           "room": "Sløyd",
           "teacher": "Alf Tor",
-          "color": "darkPurple"
+          "color": "purple"
         }
       },
       "o-p2": {
@@ -334,7 +381,7 @@
           "subject": "Samf.",
           "room": "107",
           "teacher": "Anette",
-          "color": "cyan"
+          "color": "blue"
         },
         "tir": {
           "subject": "Engelsk - 8A",
@@ -414,18 +461,18 @@
           "subject": "KRØ - 8A",
           "room": "Gymsal",
           "teacher": "Vetle",
-          "color": "lightGreen"
+          "color": "green"
         },
         "ons": null,
         "tor": {
           "subject": "Valgfag",
-          "color": "darkGrey"
+          "color": "grey"
         },
         "fre": {
           "subject": "Samf.",
           "room": "107",
           "teacher": "Anette",
-          "color": "cyan"
+          "color": "blue"
         }
       },
       "o-p4": {
@@ -441,10 +488,40 @@
         "ons": null,
         "tor": {
           "subject": "Valgfag",
-          "color": "darkGrey"
+          "color": "grey"
         },
         "fre": null
       }
+    },
+    "subjectColors": {
+      "KRØ": "green",
+      "Heiatimen - 8A": "orange",
+      "Samf.": "blue",
+      "Naturfag": "green",
+      "KRLE": "orange",
+      "Matte": "pink",
+      "Norsk - 8A": "yellow",
+      "Kunst & Håndverk": "purple",
+      "Engelsk - 8A": "blue",
+      "Språk": "red",
+      "KRØ - 8A": "green",
+      "Valgfag": "grey"
+    }
+  },
+  "dayStarts": {
+    "maja": {
+      "man": "08:15",
+      "tir": "08:15",
+      "ons": "08:15",
+      "tor": "08:15",
+      "fre": "08:15"
+    },
+    "ole": {
+      "man": "08:15",
+      "tir": "08:15",
+      "ons": "08:15",
+      "tor": "08:15",
+      "fre": "09:25"
     }
   }
 }
