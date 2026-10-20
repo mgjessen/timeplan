@@ -171,6 +171,59 @@ function normalizeTime(t) {
   return s || EMPTY_TIME;
 }
 
+/**
+ * Minutes since midnight for sorting.
+ * Empty / missing times are treated as 00:00 (midnight) — same as the UI default —
+ * so they sort first among unset rows; explicit later times follow chronologically.
+ */
+function timeToMinutes(t) {
+  const s = String(t ?? "").trim();
+  if (!s) return 0;
+  const m = s.match(/^(\d{1,2})(?::(\d{2}))?$/);
+  if (m) {
+    const hh = Math.min(23, Math.max(0, parseInt(m[1], 10) || 0));
+    const mm = Math.min(59, Math.max(0, parseInt(m[2] || "0", 10) || 0));
+    return hh * 60 + mm;
+  }
+  const digits = s.replace(/\D/g, "");
+  if (!digits) return 0;
+  if (digits.length <= 2) {
+    return Math.min(23, parseInt(digits, 10) || 0) * 60;
+  }
+  const hh = Math.min(23, parseInt(digits.slice(0, 2), 10) || 0);
+  const mm = Math.min(59, parseInt(digits.slice(2, 4), 10) || 0);
+  return hh * 60 + mm;
+}
+
+/** Stable chronological order: start, then end, then prior index. */
+function sortSlotsChronologically(slots) {
+  if (!Array.isArray(slots) || slots.length < 2) return slots || [];
+  return slots
+    .map((slot, index) => ({ slot, index }))
+    .sort((a, b) => {
+      const as = timeToMinutes(a.slot.start);
+      const bs = timeToMinutes(b.slot.start);
+      if (as !== bs) return as - bs;
+      const ae = timeToMinutes(a.slot.end);
+      const be = timeToMinutes(b.slot.end);
+      if (ae !== be) return ae - be;
+      return a.index - b.index;
+    })
+    .map(({ slot }) => slot);
+}
+
+function sortPersonSlots(person) {
+  if (!person || !Array.isArray(person.slots)) return;
+  person.slots = sortSlotsChronologically(person.slots);
+}
+
+function sortAllClassSlots(data) {
+  if (!data) return;
+  for (const key of classKeys(data)) {
+    sortPersonSlots(data[key]);
+  }
+}
+
 function formatTime(t) {
   return normalizeTime(t).replace(":", ".");
 }
@@ -345,6 +398,7 @@ function normalizeLoaded(raw) {
       data[key].name = `Klasse ${i + 1}`;
     }
     data[key].title = data[key].name;
+    sortPersonSlots(data[key]);
   });
   stripTeachersFromData(data);
   return data;
@@ -589,6 +643,7 @@ function render() {
   const data = current();
   if (!data) return;
   ensureActivePerson(data);
+  sortAllClassSlots(data);
 
   const person = data[activePerson];
   if (!person) return;
@@ -933,6 +988,11 @@ function renderTimeCell(personKey, slot, slotIndex) {
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
+    start.addEventListener("blur", () => {
+      sortPersonSlots(draft[personKey]);
+      renumberLessons(personKey);
+      render();
+    });
     const end = document.createElement("input");
     end.type = "text";
     end.inputMode = "numeric";
@@ -945,6 +1005,11 @@ function renderTimeCell(personKey, slot, slotIndex) {
       draft[personKey].slots[slotIndex].end = value;
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
+    });
+    end.addEventListener("blur", () => {
+      sortPersonSlots(draft[personKey]);
+      renumberLessons(personKey);
+      render();
     });
     time.append(start, end);
   } else {
@@ -1192,6 +1257,14 @@ function sanitize(data) {
         }
       }
       out[person].grid[slot.id] = row;
+    }
+    sortPersonSlots(out[person]);
+    let lessonN = 0;
+    for (const slot of out[person].slots) {
+      if (slot.type === "lesson") {
+        lessonN += 1;
+        slot.n = lessonN;
+      }
     }
   }
 
