@@ -446,17 +446,15 @@ function renderSingleDay(personKey, personData) {
     row.appendChild(renderTimeCell(personKey, slot, slotIndex));
 
     if (editing) {
-      const bodyWrap = document.createElement("div");
-      bodyWrap.className = "lesson-edit-wrap";
-      bodyWrap.appendChild(renderEditCell(personKey, slot, day.key, cellData));
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "remove-slot";
       remove.setAttribute("aria-label", "Fjern time");
       remove.textContent = "×";
       remove.addEventListener("click", () => removeSlot(personKey, slotIndex));
-      bodyWrap.appendChild(remove);
-      row.appendChild(bodyWrap);
+      row.appendChild(
+        renderEditCell(personKey, slot, day.key, cellData, remove)
+      );
     } else {
       row.appendChild(renderViewCell(personData, cellData));
     }
@@ -659,7 +657,7 @@ function renderViewCell(personData, cellData) {
   return body;
 }
 
-function renderEditCell(person, slot, dayKey, cellData) {
+function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
   const body = document.createElement("div");
   body.className = "lesson-body edit-cell";
 
@@ -732,7 +730,11 @@ function renderEditCell(person, slot, dayKey, cellData) {
     }
   });
 
-  body.append(subject, color);
+  const main = document.createElement("div");
+  main.className = "edit-row-main";
+  main.append(subject, color);
+  if (removeBtn) main.append(removeBtn);
+  body.append(main);
 
   if (person === "ole") {
     const room = document.createElement("input");
@@ -747,7 +749,10 @@ function renderEditCell(person, slot, dayKey, cellData) {
     teacher.addEventListener("input", () => {
       ensure().teacher = teacher.value;
     });
-    body.append(room, teacher);
+    const extra = document.createElement("div");
+    extra.className = "edit-row-extra";
+    extra.append(room, teacher);
+    body.append(extra);
   }
 
   return body;
