@@ -24,12 +24,24 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=36" />
+    <link rel="stylesheet" href="styles.css?v=37" />
   </head>
   <body>
     <div class="phone-shell">
       <header class="sticky-chrome" id="sticky-chrome">
-        <h1 class="app-title">Timeplan</h1>
+        <div class="brand-bar">
+          <h1 class="app-title">Timeplan</h1>
+          <div class="geese-mark" aria-label="GEESE">
+            <img
+              class="geese-mark-icon"
+              src="geese-mark.png?v=1"
+              width="36"
+              height="36"
+              alt=""
+            />
+            <span class="geese-mark-label">GEESE</span>
+          </div>
+        </div>
         <nav class="person-tabs" id="person-tabs" aria-label="Velg klasse"></nav>
         <nav class="day-tabs" id="day-tabs" aria-label="Velg dag"></nav>
       </header>
@@ -102,6 +114,6 @@
       </main>
     </div>
 
-    <script src="app.js?v=36"></script>
+    <script src="app.js?v=37"></script>
   </body>
 </html>

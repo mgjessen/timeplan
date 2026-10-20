@@ -69,6 +69,15 @@ body {
   padding: calc(0.75rem + var(--safe-top)) 1rem 0.45rem;
 }
 
+.brand-bar {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 2.35rem;
+  margin-bottom: 0.55rem;
+}
+
 .main {
   flex: 1 1 auto;
   min-height: 0;
@@ -80,14 +89,48 @@ body {
 }
 
 .app-title {
-  margin: 0 0 0.55rem;
-  padding: 0.2rem 0 0.15rem;
+  margin: 0;
+  padding: 0.2rem 2.75rem 0.15rem;
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.35rem;
   letter-spacing: -0.03em;
   color: var(--pine);
   text-align: center;
+}
+
+/* LogPad-style GEESE corner mark — small, secondary to Timeplan */
+.geese-mark {
+  position: absolute;
+  top: 0.1rem;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.12rem;
+  width: 2.5rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+.geese-mark-icon {
+  display: block;
+  width: 1.85rem;
+  height: 1.85rem;
+  object-fit: contain;
+  background: transparent;
+}
+
+.geese-mark-label {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.55rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--ink-soft);
+  text-transform: uppercase;
 }
 
 .btn {
