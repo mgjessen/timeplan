@@ -260,6 +260,6 @@ app.post("/api/schedules/reset", (_req, res) => {
   res.json(seed);
 });
 
-app.listen(PORT, () => {
-  console.log(`Timeplan kjører på http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Timeplan kjører på http://0.0.0.0:${PORT}`);
 });
