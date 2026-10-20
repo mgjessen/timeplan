@@ -266,7 +266,17 @@ function renderSingleDay(personKey, personData) {
     row.appendChild(renderTimeCell(personKey, slot, slotIndex));
 
     if (editing) {
-      row.appendChild(renderEditCell(personKey, slot, day.key, cellData));
+      const bodyWrap = document.createElement("div");
+      bodyWrap.className = "lesson-edit-wrap";
+      bodyWrap.appendChild(renderEditCell(personKey, slot, day.key, cellData));
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "remove-slot";
+      remove.setAttribute("aria-label", "Fjern time");
+      remove.textContent = "×";
+      remove.addEventListener("click", () => removeSlot(personKey, slotIndex));
+      bodyWrap.appendChild(remove);
+      row.appendChild(bodyWrap);
     } else {
       row.appendChild(renderViewCell(personData, cellData));
     }
@@ -292,7 +302,7 @@ function hasNamedLesson(person, dayKey, slot) {
   return !!(cell && cell.subject);
 }
 
-/** Vis pause bare hvis det finnes en navngitt time før og/eller etter */
+/** Vis pause bare mellom navngitte timer — ikke først eller sist på dagen */
 function breakTouchesNamedLesson(person, dayKey, breakIndex) {
   const slots = person.slots || [];
   let before = false;
@@ -309,7 +319,28 @@ function breakTouchesNamedLesson(person, dayKey, breakIndex) {
       break;
     }
   }
-  return before || after;
+  return before && after;
+}
+
+function renumberLessons(personKey) {
+  let n = 0;
+  for (const slot of draft[personKey].slots) {
+    if (slot.type === "lesson") {
+      n += 1;
+      slot.n = n;
+    }
+  }
+}
+
+function removeSlot(personKey, slotIndex) {
+  if (!draft) return;
+  const person = draft[personKey];
+  const [removed] = person.slots.splice(slotIndex, 1);
+  if (removed?.id && person.grid) {
+    delete person.grid[removed.id];
+  }
+  renumberLessons(personKey);
+  render();
 }
 
 function addLessonSlot(personKey) {
@@ -365,7 +396,13 @@ function renderBreakRow(personKey, slot, slotIndex) {
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
-    br.append(kind, start, end);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "remove-slot";
+    remove.setAttribute("aria-label", "Fjern pause");
+    remove.textContent = "×";
+    remove.addEventListener("click", () => removeSlot(personKey, slotIndex));
+    br.append(kind, start, end, remove);
   } else {
     const kind =
       slot.type === "lunsj" ? "Lunsj" : slot.type === "pause" ? "Pause" : slot.label;
