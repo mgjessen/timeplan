@@ -268,8 +268,7 @@ function normalizeTime(t) {
 
 /**
  * Minutes since midnight for sorting.
- * Empty / missing times are treated as 00:00 (midnight) — same as the UI default —
- * so they sort first among unset rows; explicit later times follow chronologically.
+ * Empty / missing times are treated as 00:00 (midnight) — same as the UI default.
  */
 function timeToMinutes(t) {
   const s = String(t ?? "").trim();
@@ -290,7 +289,10 @@ function timeToMinutes(t) {
   return hh * 60 + mm;
 }
 
-/** Stable chronological order: start, then end, then prior index. */
+/**
+ * Stable chronological order: start, then end, then prior index.
+ * Start 00:00 (including empty → 00:00) sorts to the bottom of the day.
+ */
 function sortSlotsChronologically(slots) {
   if (!Array.isArray(slots) || slots.length < 2) return slots || [];
   return slots
@@ -298,6 +300,9 @@ function sortSlotsChronologically(slots) {
     .sort((a, b) => {
       const as = timeToMinutes(a.slot.start);
       const bs = timeToMinutes(b.slot.start);
+      const aUnset = as === 0;
+      const bUnset = bs === 0;
+      if (aUnset !== bUnset) return aUnset ? 1 : -1;
       if (as !== bs) return as - bs;
       const ae = timeToMinutes(a.slot.end);
       const be = timeToMinutes(b.slot.end);
