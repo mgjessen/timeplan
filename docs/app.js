@@ -524,6 +524,7 @@ function renderSingleDay(personKey, personData) {
     row.className = "lesson";
 
     if (editing) {
+      row.classList.add("lesson-edit");
       row.appendChild(renderTimeCell(personKey, slot, slotIndex));
       const remove = document.createElement("button");
       remove.type = "button";
@@ -532,7 +533,7 @@ function renderSingleDay(personKey, personData) {
       remove.textContent = "×";
       remove.addEventListener("click", () => removeSlot(personKey, slotIndex));
       row.appendChild(
-        renderEditCell(personKey, slot, day.key, cellData, remove)
+        renderEditCell(personKey, slot, day.key, cellData, remove, row)
       );
     } else {
       row.appendChild(renderTimeCell(personKey, slot, slotIndex));
@@ -667,9 +668,9 @@ function pauseDisplayName(slot) {
 
 function renderBreakRow(personKey, slot, slotIndex) {
   if (editing) {
-    // Same shell as lessons: time column + striped field (name/×; no Rom)
+    // Same shell as lessons: striped field covers times + name/× (no Rom)
     const row = document.createElement("div");
-    row.className = "lesson break-lesson";
+    row.className = "lesson break-lesson lesson-edit";
 
     row.appendChild(renderTimeCell(personKey, slot, slotIndex));
 
@@ -799,9 +800,10 @@ function applyEditCellColor(body, colorKey) {
   body.classList.add(colorClass(colorKey));
 }
 
-function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
+function renderEditCell(person, slot, dayKey, cellData, removeBtn, shell) {
   const body = document.createElement("div");
   body.className = "lesson-body edit-cell";
+  const colorShell = shell || body;
 
   const ensure = () => {
     if (!draft[person].grid[slot.id]) draft[person].grid[slot.id] = {};
@@ -830,10 +832,10 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
   }
   const initialSubject = cellData?.subject || "";
   color.value = subjectColor(initialSubject, cellData?.color || "white");
-  applyEditCellColor(body, color.value);
+  applyEditCellColor(colorShell, color.value);
 
   const syncFieldColor = (colorKey) => {
-    applyEditCellColor(body, colorKey);
+    applyEditCellColor(colorShell, colorKey);
   };
 
   subject.addEventListener("input", () => {
@@ -869,13 +871,13 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
     if (subj) {
       cell.subject = subj;
       applySubjectColor(subj, color.value);
-      document.querySelectorAll(".lesson-body.edit-cell").forEach((wrap) => {
-        if (wrap.classList.contains("break-edit-cell")) return;
-        const subInput = wrap.querySelector(".subject-input");
-        const sel = wrap.querySelector(".color-select");
+      document.querySelectorAll(".lesson.lesson-edit").forEach((rowEl) => {
+        if (rowEl.classList.contains("break-lesson")) return;
+        const subInput = rowEl.querySelector(".subject-input");
+        const sel = rowEl.querySelector(".color-select");
         if (subInput && sel && subInput.value.trim() === subj) {
           sel.value = color.value;
-          applyEditCellColor(wrap, color.value);
+          applyEditCellColor(rowEl, color.value);
         }
       });
     }

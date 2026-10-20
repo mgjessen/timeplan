@@ -489,7 +489,18 @@ body {
   );
 }
 
-.lesson.break-lesson .break-edit-cell {
+/* Full-row edit shell: color/stripe covers time inputs + Fag/Rom/× */
+.lesson.lesson-edit {
+  --edit-control-h: 38px;
+  border-radius: 14px;
+  padding: 0.4rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: var(--ink);
+  /* Fill from .bg-* on the row */
+  background: var(--c-white);
+}
+
+.lesson.lesson-edit.break-lesson {
   background: repeating-linear-gradient(
     -45deg,
     rgba(255, 255, 255, 0.55),
@@ -498,7 +509,18 @@ body {
     rgba(230, 238, 234, 0.75) 8px
   ) !important;
   border: 1px dashed var(--line);
-  color: var(--ink);
+}
+
+.lesson.lesson-edit .lesson-time {
+  padding: 0;
+}
+
+.lesson.lesson-edit .lesson-body.edit-cell {
+  background: transparent !important;
+  border: none;
+  padding: 0;
+  min-height: 0;
+  box-shadow: none;
 }
 
 .lesson.break-lesson .edit-row-controls.break-edit-controls {
@@ -517,7 +539,6 @@ body {
   min-width: 0;
   max-width: 100%;
   padding: 0.4rem;
-  /* Field fill comes from .bg-* (white by default, chosen lesson color when set) */
 }
 
 .lesson-body.edit-cell input,
