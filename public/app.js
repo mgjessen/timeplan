@@ -645,13 +645,16 @@ function renderBreakRow(personKey, slot, slotIndex) {
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
+    const times = document.createElement("div");
+    times.className = "break-times";
+    times.append(start, end);
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "remove-slot";
     remove.setAttribute("aria-label", "Fjern pause");
     remove.textContent = "×";
     remove.addEventListener("click", () => removeSlot(personKey, slotIndex));
-    br.append(kind, start, end, remove);
+    br.append(kind, times, remove);
   } else {
     const kind =
       slot.type === "lunsj" ? "Lunsj" : slot.type === "pause" ? "Pause" : slot.label;
@@ -803,9 +806,7 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
 
   const main = document.createElement("div");
   main.className = "edit-row-main";
-  main.append(subject, color);
-  if (removeBtn) main.append(removeBtn);
-  body.append(main);
+  main.append(subject);
 
   if (person === "ole") {
     const room = document.createElement("input");
@@ -815,11 +816,13 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
     room.addEventListener("input", () => {
       ensure().room = room.value;
     });
-    const extra = document.createElement("div");
-    extra.className = "edit-row-extra";
-    extra.append(room);
-    body.append(extra);
+    main.classList.add("has-room");
+    main.append(room);
   }
+
+  main.append(color);
+  if (removeBtn) main.append(removeBtn);
+  body.append(main);
 
   return body;
 }
