@@ -655,6 +655,7 @@ body {
 .lesson.lesson-edit.break-lesson {
   /* Same --edit-control-h / time-input height as lesson rows (38px) */
   min-height: 0;
+  align-items: center;
   background: repeating-linear-gradient(
     -45deg,
     rgba(255, 255, 255, 0.55),
@@ -663,6 +664,44 @@ body {
     rgba(230, 238, 234, 0.75) 8px
   ) !important;
   border: 1px dashed var(--line);
+}
+
+/* One horizontal line: start | end | Pause name | × */
+.lesson.lesson-edit.break-lesson .lesson-time {
+  flex-direction: row;
+  align-items: center;
+  justify-content: stretch;
+  gap: 0.25rem;
+  padding: 0;
+  align-self: center;
+}
+
+.lesson.lesson-edit.break-lesson .lesson-time .time-input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+}
+
+.lesson.lesson-edit.break-lesson .lesson-body.edit-cell.break-edit-cell {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  padding: 0;
+  min-height: var(--edit-control-h);
+}
+
+.lesson.lesson-edit.break-lesson .edit-row-main {
+  grid-template-columns: minmax(0, 1fr) var(--edit-control-h);
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.lesson.lesson-edit.break-lesson .edit-row-controls.break-edit-controls {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  width: var(--edit-control-h);
 }
 
 .lesson.lesson-edit .lesson-time {
