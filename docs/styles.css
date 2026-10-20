@@ -130,25 +130,25 @@ body {
 .person-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.35rem;
-  padding: 0.3rem;
-  border-radius: 999px;
-  background: #ffffff;
-  border: 1px solid var(--line);
+  gap: 0.3rem;
+  padding: 0;
   margin-bottom: 0.55rem;
+  background: transparent;
+  border: none;
 }
 
 .tab {
   appearance: none;
-  border: none;
+  border: 1px solid rgba(15, 61, 52, 0.1);
   background: var(--mint);
-  border-radius: 999px;
+  border-radius: 14px;
   min-height: 48px;
   padding: 0.4rem 0.45rem;
   font: inherit;
   font-weight: 700;
   color: var(--ink-soft);
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .tab .tab-school {
@@ -166,8 +166,9 @@ body {
 
 .tab.is-active {
   background: var(--pine);
+  border-color: var(--pine);
   color: #f7fbf9;
-  box-shadow: 0 6px 16px rgba(15, 61, 52, 0.18);
+  box-shadow: 0 6px 14px rgba(15, 61, 52, 0.18);
 }
 
 .status {
