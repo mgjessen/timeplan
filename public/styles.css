@@ -227,11 +227,9 @@ body {
 }
 
 .name-edit-label {
-  font-size: 0.72rem;
+  font: inherit;
   font-weight: 700;
   color: var(--sea);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   white-space: nowrap;
   padding-right: 0.15rem;
 }
