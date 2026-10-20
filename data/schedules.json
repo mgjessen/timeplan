@@ -293,25 +293,21 @@
         "man": {
           "subject": "KRØ",
           "room": "Gymsal",
-          "teacher": "Vetle",
           "color": "green"
         },
         "tir": {
           "subject": "Heiatimen - 8A",
           "room": "107",
-          "teacher": "Vetle, Anette",
           "color": "orange"
         },
         "ons": {
           "subject": "Samf.",
           "room": "107",
-          "teacher": "Anette",
           "color": "blue"
         },
         "tor": {
           "subject": "Naturfag",
           "room": "Naturfag",
-          "teacher": "Bjørn Atle",
           "color": "green"
         },
         "fre": null
@@ -327,31 +323,26 @@
         "man": {
           "subject": "KRLE",
           "room": "107",
-          "teacher": "Alf Tor",
           "color": "orange"
         },
         "tir": {
           "subject": "Matte",
           "room": "107",
-          "teacher": "Elizabeth & Bjørn Atle",
           "color": "pink"
         },
         "ons": {
           "subject": "Norsk - 8A",
           "room": "107",
-          "teacher": "Vetle & Inger Lise",
           "color": "yellow"
         },
         "tor": {
           "subject": "KRLE",
           "room": "107",
-          "teacher": "Alf Tor",
           "color": "orange"
         },
         "fre": {
           "subject": "Kunst & Håndverk",
           "room": "Sløyd",
-          "teacher": "Alf Tor",
           "color": "purple"
         }
       },
@@ -366,13 +357,11 @@
         "man": {
           "subject": "Samf.",
           "room": "107",
-          "teacher": "Anette",
           "color": "blue"
         },
         "tir": {
           "subject": "Engelsk - 8A",
           "room": "107",
-          "teacher": "Liv/Julie",
           "color": "blue"
         },
         "ons": {
@@ -386,7 +375,6 @@
         "fre": {
           "subject": "Norsk - 8A",
           "room": "107",
-          "teacher": "Vetle",
           "color": "yellow"
         }
       },
@@ -401,31 +389,26 @@
         "man": {
           "subject": "Naturfag",
           "room": "107",
-          "teacher": "Bjørn Atle",
           "color": "green"
         },
         "tir": {
           "subject": "Norsk - 8A",
           "room": "107",
-          "teacher": "Vetle & Inger Lise",
           "color": "yellow"
         },
         "ons": {
           "subject": "Matte",
           "room": "107",
-          "teacher": "Elizabeth & Bjørn Atle",
           "color": "pink"
         },
         "tor": {
           "subject": "Matte",
           "room": "107",
-          "teacher": "Elizabeth & Bjørn Atle",
           "color": "pink"
         },
         "fre": {
           "subject": "Engelsk - 8A",
           "room": "107",
-          "teacher": "Vetle & Julie",
           "color": "blue"
         }
       },
@@ -440,13 +423,11 @@
         "man": {
           "subject": "Norsk - 8A",
           "room": "107",
-          "teacher": "Vetle",
           "color": "yellow"
         },
         "tir": {
           "subject": "KRØ - 8A",
           "room": "Gymsal",
-          "teacher": "Vetle",
           "color": "green"
         },
         "ons": null,
@@ -457,7 +438,6 @@
         "fre": {
           "subject": "Samf.",
           "room": "107",
-          "teacher": "Anette",
           "color": "blue"
         }
       },

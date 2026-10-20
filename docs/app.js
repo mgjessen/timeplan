@@ -24,8 +24,9 @@ const COLORS = [
 const COLOR_KEYS = COLORS.map((c) => c.key);
 
 /** localStorage on GitHub Pages (LogPad-style); Express API when `npm start`. */
-const STORAGE_KEY = "timeplan-schedules-v5";
-const DATA_VERSION = 5;
+const STORAGE_KEY = "timeplan-schedules-v6";
+const LEGACY_STORAGE_KEYS = ["timeplan-schedules-v5"];
+const DATA_VERSION = 6;
 
 /** @type {'api' | 'local' | null} */
 let backend = null;
@@ -170,7 +171,56 @@ function applySubjectColor(subject, color) {
 }
 
 function looksLikeSchedules(data) {
-  return Boolean(data && data.maja?.grid && data.ole?.grid && data.maja?.slots);
+  return Boolean(
+    data &&
+      data.maja &&
+      data.ole &&
+      Array.isArray(data.maja.slots) &&
+      Array.isArray(data.ole.slots) &&
+      data.maja.grid &&
+      data.ole.grid
+  );
+}
+
+function emptySchedules() {
+  return {
+    version: DATA_VERSION,
+    schoolYear: "",
+    subjectColors: {},
+    maja: { name: "Klasse 1", title: "Klasse 1", slots: [], grid: {} },
+    ole: { name: "Klasse 2", title: "Klasse 2", slots: [], grid: {} },
+  };
+}
+
+function isScheduleEmpty(data) {
+  if (!data) return true;
+  for (const key of PEOPLE) {
+    for (const slot of data[key]?.slots || []) {
+      if (slot.type !== "lesson") continue;
+      const row = data[key].grid?.[slot.id];
+      if (!row) continue;
+      for (const day of WEEKDAYS) {
+        if (row[day.key]?.subject) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function stripTeachersFromData(data) {
+  for (const key of PEOPLE) {
+    const person = data[key];
+    if (!person?.grid) continue;
+    for (const row of Object.values(person.grid)) {
+      if (!row || typeof row !== "object") continue;
+      for (const day of Object.keys(row)) {
+        const cell = row[day];
+        if (!cell || typeof cell !== "object") continue;
+        delete cell.teacher;
+      }
+    }
+  }
+  return data;
 }
 
 function normalizeLoaded(raw) {
@@ -182,20 +232,45 @@ function normalizeLoaded(raw) {
   if (!data.subjectColors || typeof data.subjectColors !== "object") {
     data.subjectColors = {};
   }
-  if (typeof data.schoolYear !== "string" || !data.schoolYear.trim()) {
-    data.schoolYear = "2026/2027";
+  if (typeof data.schoolYear !== "string") {
+    data.schoolYear = "";
   }
   for (const key of PEOPLE) {
+    if (!data[key].grid || typeof data[key].grid !== "object") {
+      data[key].grid = {};
+    }
+    if (!Array.isArray(data[key].slots)) data[key].slots = [];
     if (data[key]?.subjectColors) delete data[key].subjectColors;
+    if (typeof data[key].name !== "string" || !data[key].name.trim()) {
+      data[key].name = key === "ole" ? "Klasse 2" : "Klasse 1";
+    }
+    data[key].title = data[key].name;
   }
+  stripTeachersFromData(data);
   return data;
 }
 
 function readLocal() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      for (const key of LEGACY_STORAGE_KEYS) {
+        raw = localStorage.getItem(key);
+        if (raw) break;
+      }
+    }
     if (!raw) return null;
-    return normalizeLoaded(JSON.parse(raw));
+    const data = normalizeLoaded(JSON.parse(raw));
+    // Persist scrubbed v6 copy; drop legacy keys
+    writeLocal(data);
+    for (const key of LEGACY_STORAGE_KEYS) {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        /* ignore */
+      }
+    }
+    return data;
   } catch {
     return null;
   }
@@ -204,20 +279,6 @@ function readLocal() {
 function writeLocal(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   return data;
-}
-
-async function loadSeedDefaults() {
-  const paths = ["data/schedules.json", "data/seed.json"];
-  for (const path of paths) {
-    try {
-      const res = await fetch(`${path}?t=${Date.now()}`, { cache: "no-store" });
-      if (!res.ok) continue;
-      return normalizeLoaded(await res.json());
-    } catch {
-      /* try next */
-    }
-  }
-  throw new Error("Fant ikke standard timeplan (seed)");
 }
 
 async function detectBackend() {
@@ -246,8 +307,8 @@ async function loadFromApi() {
 async function loadFromLocal() {
   const stored = readLocal();
   if (stored) return stored;
-  const seed = await loadSeedDefaults();
-  return writeLocal(seed);
+  // New browser: blank schedule — no Haumyrheia seed. Import or Rediger to fill.
+  return emptySchedules();
 }
 
 async function saveToApi(payload) {
@@ -349,7 +410,10 @@ function render() {
   document.body.classList.toggle("is-editing", editing);
   els.viewActions.hidden = editing;
   els.editActions.hidden = !editing;
-  if (els.fileTools) els.fileTools.hidden = !editing;
+  // Import/export in edit always; also in view when schedule is empty
+  if (els.fileTools) {
+    els.fileTools.hidden = !(editing || isScheduleEmpty(data));
+  }
   els.btnSave.disabled = saving;
   els.btnCancel.disabled = saving;
   if (els.btnExport) els.btnExport.disabled = saving;
@@ -468,6 +532,13 @@ function renderSingleDay(personKey, personData) {
     add.textContent = "+ Legg til time";
     add.addEventListener("click", () => addLessonSlot(personKey));
     list.appendChild(add);
+  } else if (!list.children.length) {
+    const empty = el(
+      "p",
+      "empty-schedule",
+      "Ingen timeplan ennå. Trykk Last inn for å hente en fil, eller Rediger for å lage en."
+    );
+    list.appendChild(empty);
   }
 
   card.appendChild(list);
