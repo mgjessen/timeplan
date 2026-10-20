@@ -416,6 +416,59 @@ function setActiveDay(dayKey) {
   render();
 }
 
+function shiftActiveDay(delta) {
+  const idx = WEEKDAYS.findIndex((d) => d.key === activeDay);
+  if (idx < 0) return;
+  const next = idx + delta;
+  if (next < 0 || next >= WEEKDAYS.length) return;
+  setActiveDay(WEEKDAYS[next].key);
+}
+
+/** Swipe left/right on the day view to change weekday (same as day chips). */
+function initDaySwipe() {
+  const target =
+    document.querySelector(".schedule-section") || els.scheduleRoot;
+  if (!target || target.dataset.daySwipeBound === "1") return;
+  target.dataset.daySwipeBound = "1";
+
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+
+  target.addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.target.closest("input, select, textarea, button, a, label")) {
+        tracking = false;
+        return;
+      }
+      const t = e.changedTouches[0];
+      if (!t) return;
+      startX = t.clientX;
+      startY = t.clientY;
+      tracking = true;
+    },
+    { passive: true }
+  );
+
+  target.addEventListener(
+    "touchend",
+    (e) => {
+      if (!tracking) return;
+      tracking = false;
+      const t = e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      if (Math.abs(dx) < 48) return;
+      if (Math.abs(dx) <= Math.abs(dy) * 1.15) return;
+      // Swipe left → next day; swipe right → previous day
+      shiftActiveDay(dx < 0 ? 1 : -1);
+    },
+    { passive: true }
+  );
+}
+
 function render() {
   const data = current();
   if (!data) return;
@@ -1048,6 +1101,8 @@ els.importInput?.addEventListener("change", () => {
   els.importInput.value = "";
   if (file) importSchedulesFile(file);
 });
+
+initDaySwipe();
 
 loadSchedules().catch((err) => {
   setStatus(err.message || "Noe gikk galt", "is-err");

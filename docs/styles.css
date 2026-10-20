@@ -275,6 +275,11 @@ body {
   color: #f7fbf9;
 }
 
+.schedule-section {
+  /* Prefer vertical scroll; horizontal swipe handled in JS for day change */
+  touch-action: pan-y;
+}
+
 .day-stack {
   display: grid;
   gap: 0.85rem;
