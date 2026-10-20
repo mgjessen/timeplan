@@ -198,20 +198,7 @@
         "fre": null
       }
     },
-    "klass": "10A",
-    "subjectColors": {
-      "Naturfag": "green",
-      "UTV": "yellow",
-      "Samfunn": "orange",
-      "KRLE": "brown",
-      "Engelsk": "blue",
-      "GYM": "yellow",
-      "Matte": "pink",
-      "Musikk": "purple",
-      "Språk/Arbeids.l.fag": "pink",
-      "Heiatimen": "orange",
-      "Valgfag": "grey"
-    }
+    "klass": "10A"
   },
   "ole": {
     "name": "Haumyrheia 8A",
@@ -492,20 +479,6 @@
         },
         "fre": null
       }
-    },
-    "subjectColors": {
-      "KRØ": "green",
-      "Heiatimen - 8A": "orange",
-      "Samf.": "blue",
-      "Naturfag": "green",
-      "KRLE": "orange",
-      "Matte": "pink",
-      "Norsk - 8A": "yellow",
-      "Kunst & Håndverk": "purple",
-      "Engelsk - 8A": "blue",
-      "Språk": "red",
-      "KRØ - 8A": "green",
-      "Valgfag": "grey"
     }
   },
   "dayStarts": {
@@ -523,5 +496,26 @@
       "tor": "08:15",
       "fre": "09:25"
     }
+  },
+  "subjectColors": {
+    "Naturfag": "green",
+    "UTV": "yellow",
+    "Samfunn": "orange",
+    "KRLE": "brown",
+    "Engelsk": "blue",
+    "GYM": "yellow",
+    "Matte": "pink",
+    "Musikk": "purple",
+    "Språk/Arbeids.l.fag": "pink",
+    "Heiatimen": "orange",
+    "Valgfag": "grey",
+    "KRØ": "green",
+    "Heiatimen - 8A": "orange",
+    "Samf.": "blue",
+    "Norsk - 8A": "yellow",
+    "Kunst & Håndverk": "purple",
+    "Engelsk - 8A": "blue",
+    "Språk": "red",
+    "KRØ - 8A": "green"
   }
 }

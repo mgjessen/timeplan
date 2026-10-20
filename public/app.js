@@ -51,10 +51,28 @@ function defaultDayKey(now = new Date()) {
   return WEEKDAYS[jsDay - 1].key;
 }
 
+let statusTimer = null;
+
 function setStatus(message, kind = "") {
+  if (statusTimer) {
+    clearTimeout(statusTimer);
+    statusTimer = null;
+  }
   els.status.textContent = message || "";
-  els.status.classList.remove("is-ok", "is-err");
+  els.status.classList.remove("is-ok", "is-err", "is-fading");
   if (kind) els.status.classList.add(kind);
+  if (!message) return;
+  // Transient feedback fades after 10s (keep loading text until cleared)
+  const sticky = /henter|lagrer/i.test(message);
+  if (sticky) return;
+  statusTimer = setTimeout(() => {
+    els.status.classList.add("is-fading");
+    statusTimer = setTimeout(() => {
+      els.status.textContent = "";
+      els.status.classList.remove("is-ok", "is-err", "is-fading");
+      statusTimer = null;
+    }, 450);
+  }, 10000);
 }
 
 function clone(data) {
@@ -111,24 +129,31 @@ function dayBounds(person, dayKey) {
   return { start, end };
 }
 
-function subjectColor(person, subject, fallback = "white") {
+function colorMap(data = current()) {
+  return (data && data.subjectColors) || {};
+}
+
+function subjectColor(subject, fallback = "white") {
   if (!subject) return fallback;
-  const map = person.subjectColors || {};
+  const map = colorMap();
   if (map[subject]) return map[subject];
   return COLOR_KEYS.includes(fallback) ? fallback : "white";
 }
 
-function applySubjectColor(personKey, subject, color) {
+/** Apply color to a subject in BOTH classes */
+function applySubjectColor(subject, color) {
   if (!draft || !subject) return;
-  const person = draft[personKey];
-  if (!person.subjectColors) person.subjectColors = {};
-  person.subjectColors[subject] = color;
-  for (const slot of person.slots || []) {
-    const row = person.grid?.[slot.id];
-    if (!row) continue;
-    for (const day of WEEKDAYS) {
-      const cell = row[day.key];
-      if (cell?.subject === subject) cell.color = color;
+  if (!draft.subjectColors) draft.subjectColors = {};
+  draft.subjectColors[subject] = color;
+  for (const personKey of PEOPLE) {
+    const person = draft[personKey];
+    for (const slot of person.slots || []) {
+      const row = person.grid?.[slot.id];
+      if (!row) continue;
+      for (const day of WEEKDAYS) {
+        const cell = row[day.key];
+        if (cell?.subject === subject) cell.color = color;
+      }
     }
   }
 }
@@ -467,7 +492,7 @@ function renderViewCell(personData, cellData) {
     return body;
   }
 
-  const color = subjectColor(personData, cellData.subject, cellData.color);
+  const color = subjectColor(cellData.subject, cellData.color);
   body.classList.add(colorClass(color));
   body.appendChild(el("span", "subject", cellData.subject));
   if (cellData.room || cellData.teacher) {
@@ -510,22 +535,16 @@ function renderEditCell(person, slot, dayKey, cellData) {
     color.appendChild(opt);
   }
   const initialSubject = cellData?.subject || "";
-  color.value = subjectColor(
-    draft[person],
-    initialSubject,
-    cellData?.color || "white"
-  );
+  color.value = subjectColor(initialSubject, cellData?.color || "white");
 
   subject.addEventListener("input", () => {
     const cell = ensure();
-    const prev = cell.subject;
     cell.subject = subject.value.trim();
     if (cell.subject) {
-      const mapped = subjectColor(draft[person], cell.subject, cell.color || "white");
+      const mapped = subjectColor(cell.subject, cell.color || "white");
       cell.color = mapped;
       color.value = mapped;
     }
-    // If renaming away from old subject, day bounds update
     renderDayTabs(draft[person]);
   });
 
@@ -533,9 +552,9 @@ function renderEditCell(person, slot, dayKey, cellData) {
     const cell = ensure();
     cell.subject = subject.value.trim();
     if (cell.subject) {
-      const mapped = subjectColor(draft[person], cell.subject, color.value);
+      const mapped = subjectColor(cell.subject, color.value);
       cell.color = mapped;
-      applySubjectColor(person, cell.subject, mapped);
+      applySubjectColor(cell.subject, mapped);
       color.value = mapped;
     }
     renderDayTabs(draft[person]);
@@ -547,8 +566,7 @@ function renderEditCell(person, slot, dayKey, cellData) {
     const subj = (subject.value || cell.subject || "").trim();
     if (subj) {
       cell.subject = subj;
-      applySubjectColor(person, subj, color.value);
-      // Keep other open color selects for same subject in sync
+      applySubjectColor(subj, color.value);
       document.querySelectorAll(".lesson-body.edit-cell").forEach((wrap) => {
         const subInput = wrap.querySelector(".subject-input");
         const sel = wrap.querySelector(".color-select");
@@ -590,8 +608,9 @@ function el(tag, className, text) {
 function enterEdit() {
   if (!schedules) return;
   draft = clone(schedules);
+  if (!draft.subjectColors) draft.subjectColors = {};
   for (const key of PEOPLE) {
-    if (!draft[key].subjectColors) draft[key].subjectColors = {};
+    delete draft[key].subjectColors;
   }
   editing = true;
   setStatus("Redigeringsmodus — husk å lagre.");
@@ -607,11 +626,13 @@ function cancelEdit() {
 
 function sanitize(data) {
   const out = clone(data);
+  if (!out.subjectColors) out.subjectColors = {};
+
   for (const person of PEOPLE) {
     const name = String(out[person].name || "").trim() || out[person].title;
     out[person].name = name;
     out[person].title = name;
-    if (!out[person].subjectColors) out[person].subjectColors = {};
+    delete out[person].subjectColors;
 
     for (const slot of out[person].slots) {
       slot.start = String(slot.start || "").trim();
@@ -633,10 +654,10 @@ function sanitize(data) {
           row[day.key] = null;
         } else {
           let color = cell.color || "white";
-          if (subject && out[person].subjectColors[subject]) {
-            color = out[person].subjectColors[subject];
+          if (subject && out.subjectColors[subject]) {
+            color = out.subjectColors[subject];
           } else if (subject && color && color !== "white") {
-            out[person].subjectColors[subject] = color;
+            out.subjectColors[subject] = color;
           }
           row[day.key] = { subject, color };
           if (room) row[day.key].room = room;
@@ -645,13 +666,15 @@ function sanitize(data) {
       }
       out[person].grid[slot.id] = row;
     }
+  }
 
-    // Final sync: all cells of a subject share color
+  // Final sync across both classes
+  for (const person of PEOPLE) {
     for (const slot of out[person].slots) {
       for (const day of WEEKDAYS) {
         const cell = out[person].grid[slot.id]?.[day.key];
-        if (cell?.subject && out[person].subjectColors[cell.subject]) {
-          cell.color = out[person].subjectColors[cell.subject];
+        if (cell?.subject && out.subjectColors[cell.subject]) {
+          cell.color = out.subjectColors[cell.subject];
         }
       }
     }

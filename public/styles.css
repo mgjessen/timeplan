@@ -164,6 +164,7 @@ body {
   min-height: 1.1em;
   font-size: 0.88rem;
   color: var(--ink-soft);
+  transition: opacity 0.45s ease;
 }
 
 .status.is-ok {
@@ -172,6 +173,10 @@ body {
 
 .status.is-err {
   color: #9b2c2c;
+}
+
+.status.is-fading {
+  opacity: 0;
 }
 
 .name-edit {

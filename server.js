@@ -7,7 +7,8 @@ const DATA_DIR = path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "schedules.json");
 const SEED_FILE = path.join(DATA_DIR, "seed.json");
 const WEEKDAYS = ["man", "tir", "ons", "tor", "fre"];
-const DATA_VERSION = 4;
+const PEOPLE = ["maja", "ole"];
+const DATA_VERSION = 5;
 const BASIC_COLORS = new Set([
   "red",
   "orange",
@@ -29,11 +30,17 @@ function withMeta(seed) {
   return {
     version: DATA_VERSION,
     schoolYear: seed.schoolYear,
-    dayEnds: seed.dayEnds || { maja: {}, ole: {} },
-    dayStarts: seed.dayStarts || { maja: {}, ole: {} },
-    maja: seed.maja,
-    ole: seed.ole,
+    subjectColors: seed.subjectColors || {},
+    maja: stripPersonColors(seed.maja),
+    ole: stripPersonColors(seed.ole),
   };
+}
+
+function stripPersonColors(person) {
+  if (!person || typeof person !== "object") return person;
+  const copy = structuredClone(person);
+  delete copy.subjectColors;
+  return copy;
 }
 
 function ensureData() {
@@ -82,7 +89,9 @@ function normalizeColor(color) {
 }
 
 function normalizeTime(value) {
-  const raw = String(value || "").trim().replace(".", ":");
+  const raw = String(value || "")
+    .trim()
+    .replace(".", ":");
   const m = raw.match(/^(\d{1,2}):(\d{2})$/);
   if (!m) return String(value || "").trim().slice(0, 8);
   return `${m[1].padStart(2, "0")}:${m[2]}`;
@@ -112,6 +121,7 @@ function normalizeCell(cell) {
 function normalizePerson(input, fallback) {
   if (!input || typeof input !== "object") return null;
   const base = structuredClone(fallback);
+  delete base.subjectColors;
   const name =
     typeof input.name === "string" && input.name.trim()
       ? input.name.trim().slice(0, 60)
@@ -149,31 +159,51 @@ function normalizePerson(input, fallback) {
     }
   }
   base.grid = grid;
+  return base;
+}
 
-  const subjectColors = {};
-  const incoming =
-    input.subjectColors && typeof input.subjectColors === "object"
-      ? input.subjectColors
-      : base.subjectColors || {};
-  for (const [subj, color] of Object.entries(incoming)) {
-    const key = String(subj || "").trim().slice(0, 80);
-    if (key) subjectColors[key] = normalizeColor(color);
+function collectSubjectColors(body, maja, ole, seedColors) {
+  const map = {};
+  // Seed first, then request body wins (shared map is source of truth when saving)
+  const sources = [
+    seedColors,
+    body.maja?.subjectColors,
+    body.ole?.subjectColors,
+    body.subjectColors,
+  ];
+  for (const src of sources) {
+    if (!src || typeof src !== "object") continue;
+    for (const [subj, color] of Object.entries(src)) {
+      const key = String(subj || "").trim().slice(0, 80);
+      if (!key) continue;
+      map[key] = normalizeColor(color);
+    }
   }
-  // Sync: every cell with a subject gets the subject color
-  for (const id of slotIds) {
-    for (const day of WEEKDAYS) {
-      const cell = grid[id][day];
-      if (!cell?.subject) continue;
-      if (!subjectColors[cell.subject] && cell.color) {
-        subjectColors[cell.subject] = normalizeColor(cell.color);
+  // Infer from cell colors only when subject has no mapping yet
+  for (const person of [maja, ole]) {
+    for (const slot of person.slots || []) {
+      for (const day of WEEKDAYS) {
+        const cell = person.grid?.[slot.id]?.[day];
+        if (!cell?.subject) continue;
+        if (!map[cell.subject] && cell.color) {
+          map[cell.subject] = normalizeColor(cell.color);
+        }
       }
+    }
+  }
+  return map;
+}
+
+function applySharedColors(person, subjectColors) {
+  for (const slot of person.slots || []) {
+    for (const day of WEEKDAYS) {
+      const cell = person.grid?.[slot.id]?.[day];
+      if (!cell?.subject) continue;
       if (subjectColors[cell.subject]) {
         cell.color = subjectColors[cell.subject];
       }
     }
   }
-  base.subjectColors = subjectColors;
-  return base;
 }
 
 function normalizeAll(body) {
@@ -181,12 +211,21 @@ function normalizeAll(body) {
   const maja = normalizePerson(body.maja, seed.maja);
   const ole = normalizePerson(body.ole, seed.ole);
   if (!maja || !ole) return null;
+  const subjectColors = collectSubjectColors(
+    body || {},
+    maja,
+    ole,
+    seed.subjectColors
+  );
+  applySharedColors(maja, subjectColors);
+  applySharedColors(ole, subjectColors);
   return {
     version: DATA_VERSION,
     schoolYear:
       typeof body.schoolYear === "string" && body.schoolYear.trim()
         ? body.schoolYear.trim()
         : seed.schoolYear,
+    subjectColors,
     maja,
     ole,
   };
