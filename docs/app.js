@@ -929,7 +929,7 @@ function renderTimeCell(personKey, slot, slotIndex) {
     start.value = formatTimeInputValue(normalizeTime(slot.start));
     start.setAttribute("aria-label", "Starttid");
     bindTimeInput(start, (value) => {
-      draft[personKey].slots[slotIndex].start = value || EMPTY_TIME;
+      draft[personKey].slots[slotIndex].start = value;
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
@@ -942,7 +942,7 @@ function renderTimeCell(personKey, slot, slotIndex) {
     end.value = formatTimeInputValue(normalizeTime(slot.end));
     end.setAttribute("aria-label", "Sluttid");
     bindTimeInput(end, (value) => {
-      draft[personKey].slots[slotIndex].end = value || EMPTY_TIME;
+      draft[personKey].slots[slotIndex].end = value;
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
