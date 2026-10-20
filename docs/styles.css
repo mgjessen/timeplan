@@ -496,8 +496,7 @@ body {
   padding: 0.4rem;
   border: 1px solid rgba(0, 0, 0, 0.06);
   color: var(--ink);
-  /* Fill from .bg-* on the row */
-  background: var(--c-white);
+  /* Fill from .bg-* on the row (applied in JS) */
 }
 
 .lesson.lesson-edit.break-lesson {
