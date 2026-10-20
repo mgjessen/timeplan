@@ -656,11 +656,17 @@ function renderBreakRow(personKey, slot, slotIndex) {
     remove.addEventListener("click", () => removeSlot(personKey, slotIndex));
     br.append(kind, times, remove);
   } else {
-    const kind =
+    br.classList.add("break-view");
+    const kindLabel =
       slot.type === "lunsj" ? "Lunsj" : slot.type === "pause" ? "Pause" : slot.label;
-    br.textContent = slot.start && slot.end
-      ? `${kind} · ${slotDisplayLabel(slot)}`
-      : kind;
+    const time = document.createElement("div");
+    time.className = "lesson-time";
+    const timeText = slotDisplayLabel(slot) || "—";
+    time.appendChild(el("span", "lbl", timeText));
+    const body = document.createElement("div");
+    body.className = "break-body";
+    body.textContent = kindLabel || "Pause";
+    br.append(time, body);
   }
   return br;
 }
