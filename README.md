@@ -6,7 +6,7 @@ Mobilvennlig ukesplan for **Haumyrheia 8A** og **Haumyrheia 10A** (norsk UI), sk
 
 **https://mgjessen.github.io/timeplan/**
 
-Samme modell som [LogPad](https://github.com/mgjessen/logpad): statisk site på GitHub Pages. Endringer lagres i **localStorage** i nettleseren. Bruk **Eksporter** / **Last inn** (i Rediger) for JSON-backup mellom enheter.
+Samme modell som [LogPad](https://github.com/mgjessen/logpad): statisk site på GitHub Pages. Endringer lagres i **localStorage** i nettleseren. Bruk **Eksporter** / **Importer** (i Rediger) for JSON-backup mellom enheter.
 
 Deploy: `.github/workflows/pages.yml` bygger `public/` + `data/` ved push til `main`.
 
@@ -25,4 +25,4 @@ npm start
 - Dagvelger Man–Fre
 - Fargekodede fag; 8A viser rom på samme linje som fag
 - **Rediger** → **Lagre** / **Avbryt**
-- **Eksporter** / **Last inn** JSON-konfig
+- **Eksporter** / **Importer** JSON-konfig

@@ -565,7 +565,7 @@ function renderSingleDay(personKey, personData) {
     const empty = el(
       "p",
       "empty-schedule",
-      "Ingen timeplan ennå. Trykk Last inn for å hente en fil, eller Rediger for å lage en."
+      "Ingen timeplan ennå. Trykk Importer for å hente en fil, eller Rediger for å lage en."
     );
     list.appendChild(empty);
   }
