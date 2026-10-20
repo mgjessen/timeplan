@@ -670,7 +670,7 @@ body {
   /* In document flow under the timetable — scroll to reach Rediger */
   position: relative;
   width: 100%;
-  margin-top: 1.7rem; /* ~2× previous gap above Rediger */
+  margin-top: 2.55rem; /* +50% from 1.7rem gap above Rediger */
   padding: 0.15rem 0 0.35rem;
   background: transparent;
 }
