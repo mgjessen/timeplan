@@ -140,7 +140,7 @@ body {
   grid-template-columns: 1fr;
 }
 
-.person-tabs[data-count="3"],
+.person-tabs[data-count="3"] .tab .tab-class,
 .person-tabs[data-count="4"] .tab .tab-class {
   font-size: 0.85rem;
 }
