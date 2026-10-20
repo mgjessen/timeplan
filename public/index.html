@@ -24,7 +24,7 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=19" />
+    <link rel="stylesheet" href="styles.css?v=20" />
   </head>
   <body>
     <div class="phone-shell">
@@ -60,19 +60,25 @@
         <section class="schedule-section" aria-label="Ukeplan">
           <div id="schedule-root" class="day-stack"></div>
         </section>
-      </main>
 
-      <div class="action-bar" id="action-bar">
-        <div class="toolbar-actions" id="view-actions">
-          <button type="button" class="btn btn-edit" id="btn-edit">Rediger</button>
+        <div class="action-bar" id="action-bar">
+          <div class="toolbar-actions" id="view-actions">
+            <button type="button" class="btn btn-edit" id="btn-edit">
+              Rediger
+            </button>
+          </div>
+          <div class="toolbar-actions edit-pair" id="edit-actions" hidden>
+            <button type="button" class="btn btn-ghost" id="btn-cancel">
+              Avbryt
+            </button>
+            <button type="button" class="btn btn-primary" id="btn-save">
+              Lagre
+            </button>
+          </div>
         </div>
-        <div class="toolbar-actions edit-pair" id="edit-actions" hidden>
-          <button type="button" class="btn btn-ghost" id="btn-cancel">Avbryt</button>
-          <button type="button" class="btn btn-primary" id="btn-save">Lagre</button>
-        </div>
-      </div>
+      </main>
     </div>
 
-    <script src="app.js?v=18"></script>
+    <script src="app.js?v=20"></script>
   </body>
 </html>
