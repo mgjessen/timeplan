@@ -526,12 +526,23 @@ function renderSingleDay(personKey, personData) {
   });
 
   if (editing) {
-    const add = document.createElement("button");
-    add.type = "button";
-    add.className = "add-lesson";
-    add.textContent = "+ Legg til time";
-    add.addEventListener("click", () => addLessonSlot(personKey));
-    list.appendChild(add);
+    const actions = document.createElement("div");
+    actions.className = "add-slot-actions";
+
+    const addLesson = document.createElement("button");
+    addLesson.type = "button";
+    addLesson.className = "add-lesson";
+    addLesson.textContent = "+ Legg til time";
+    addLesson.addEventListener("click", () => addLessonSlot(personKey));
+
+    const addPause = document.createElement("button");
+    addPause.type = "button";
+    addPause.className = "add-lesson add-pause";
+    addPause.textContent = "+ Legg til pause";
+    addPause.addEventListener("click", () => addPauseSlot(personKey));
+
+    actions.append(addLesson, addPause);
+    list.appendChild(actions);
   } else if (!list.children.length) {
     const empty = el(
       "p",
@@ -612,6 +623,20 @@ function addLessonSlot(personKey) {
     tor: null,
     fre: null,
   };
+  render();
+}
+
+function addPauseSlot(personKey) {
+  if (!draft) return;
+  const person = draft[personKey];
+  const id = `p${Date.now().toString(36)}`;
+  person.slots.push({
+    id,
+    type: "pause",
+    start: "",
+    end: "",
+    label: "Pause",
+  });
   render();
 }
 

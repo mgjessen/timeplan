@@ -316,17 +316,37 @@ body {
   gap: 0.4rem;
 }
 
+.add-slot-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
 .add-lesson {
   appearance: none;
   border: 1px dashed var(--line);
   background: rgba(255, 255, 255, 0.55);
   border-radius: 12px;
   min-height: 44px;
-  margin-top: 0.25rem;
+  margin-top: 0;
   font: inherit;
   font-weight: 700;
   color: var(--sea);
   cursor: pointer;
+  width: 100%;
+}
+
+.add-lesson.add-pause {
+  color: var(--ink-soft);
+  border-style: dashed;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.35) 4px,
+    rgba(230, 238, 234, 0.55) 4px,
+    rgba(230, 238, 234, 0.55) 8px
+  );
 }
 
 .add-lesson:active {
