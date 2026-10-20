@@ -21,9 +21,11 @@
   <body>
     <div class="phone-shell">
       <main id="planer" class="main">
-        <h1 class="app-title">Timeplan</h1>
-
-        <nav class="person-tabs" id="person-tabs" aria-label="Velg klasse"></nav>
+        <div class="sticky-chrome">
+          <h1 class="app-title">Timeplan</h1>
+          <nav class="person-tabs" id="person-tabs" aria-label="Velg klasse"></nav>
+          <nav class="day-tabs" id="day-tabs" aria-label="Velg dag"></nav>
+        </div>
 
         <p class="status" id="status" role="status" aria-live="polite"></p>
 
@@ -31,8 +33,6 @@
           <span>Klassenavn</span>
           <input type="text" id="name-input" maxlength="60" />
         </label>
-
-        <nav class="day-tabs" id="day-tabs" aria-label="Velg dag"></nav>
 
         <section class="schedule-section" aria-label="Ukeplan">
           <div id="schedule-root" class="day-stack"></div>

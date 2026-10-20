@@ -61,20 +61,25 @@ body {
   padding: calc(0.75rem + var(--safe-top)) 1rem 1.25rem;
 }
 
-.app-title {
+.sticky-chrome {
   position: sticky;
   top: var(--safe-top);
   z-index: 6;
-  margin: 0 0 0.75rem;
-  padding: 0.45rem 0 0.5rem;
+  background: #ffffff;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(15, 61, 52, 0.06);
+}
+
+.app-title {
+  margin: 0 0 0.55rem;
+  padding: 0.2rem 0 0.15rem;
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.35rem;
   letter-spacing: -0.03em;
   color: var(--pine);
   text-align: center;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(10px);
 }
 
 .btn {
@@ -121,10 +126,7 @@ body {
   border-radius: 999px;
   background: #ffffff;
   border: 1px solid var(--line);
-  margin-bottom: 0.65rem;
-  position: sticky;
-  top: calc(2.55rem + var(--safe-top));
-  z-index: 5;
+  margin-bottom: 0.55rem;
 }
 
 .tab {
@@ -212,17 +214,9 @@ body {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 0.3rem;
-  margin-bottom: 0.9rem;
-  position: sticky;
-  top: calc(5.7rem + var(--safe-top));
-  z-index: 4;
-  padding: 0.2rem 0 0.45rem;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(255, 255, 255, 0.94) 75%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  margin: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .day-tab {
