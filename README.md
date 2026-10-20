@@ -23,6 +23,6 @@ npm start
 
 - Faner for Haumyrheia 8A / 10A
 - Dagvelger Man–Fre
-- Fargekodede fag; 8A har rom og lærer
+- Fargekodede fag; 8A viser rom på samme linje som fag
 - **Rediger** → **Lagre** / **Avbryt**
 - **Eksporter** / **Last inn** JSON-konfig
