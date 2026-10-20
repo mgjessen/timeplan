@@ -318,7 +318,7 @@ body {
 
 .add-slot-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0.4rem;
   margin-top: 0.25rem;
 }
@@ -355,7 +355,7 @@ body {
 
 .lesson {
   display: grid;
-  grid-template-columns: 4.25rem minmax(0, 1fr);
+  grid-template-columns: 4.85rem minmax(0, 1fr);
   gap: 0.35rem;
   align-items: stretch;
   min-height: 3.25rem;
@@ -458,7 +458,7 @@ body {
 
 .break-row.break-view {
   display: grid;
-  grid-template-columns: 4.25rem minmax(0, 1fr);
+  grid-template-columns: 4.85rem minmax(0, 1fr);
   gap: 0.35rem;
   align-items: stretch;
   min-width: 0;
@@ -508,10 +508,11 @@ body {
     rgba(230, 238, 234, 0.75) 8px
   ) !important;
   border: 1px dashed var(--line);
+  color: var(--ink);
 }
 
 .lesson.break-lesson .edit-row-controls.break-edit-controls {
-  grid-template-columns: 1.9rem;
+  grid-template-columns: var(--edit-control-h);
   justify-content: end;
 }
 
@@ -520,25 +521,30 @@ body {
 }
 
 .lesson-body.edit-cell {
-  background: rgba(255, 255, 255, 0.92) !important;
+  --edit-control-h: 38px;
   gap: 0.3rem;
   color: var(--ink);
   min-width: 0;
   max-width: 100%;
   padding: 0.4rem;
+  /* Default white field; .bg-* from chosen lesson color overrides */
+  background: var(--c-white);
 }
 
 .lesson-body.edit-cell input,
-.lesson-body.edit-cell select {
+.lesson-body.edit-cell select,
+.lesson-body.edit-cell .remove-slot {
   width: 100%;
   min-width: 0;
+  height: var(--edit-control-h);
+  min-height: var(--edit-control-h);
+  box-sizing: border-box;
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 0.4rem 0.45rem;
+  padding: 0.35rem 0.45rem;
   font: inherit;
   font-size: 0.84rem;
   background: #fff;
-  min-height: 38px;
 }
 
 .lesson-body.edit-cell .subject-input {
@@ -547,10 +553,34 @@ body {
 }
 
 .lesson-body.edit-cell .subject-input::placeholder,
-.lesson-body.edit-cell .room-input::placeholder {
+.lesson-body.edit-cell .room-input::placeholder,
+.lesson-body.edit-cell .pause-name-input::placeholder {
   color: #b0b8b4;
   opacity: 1;
   font-weight: 500;
+}
+
+.edit-row-with-n {
+  display: grid;
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+  gap: 0.35rem;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.edit-row-with-n:not(:has(.edit-lesson-n)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.edit-lesson-n {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--pine);
+  line-height: 1;
+  padding-top: 0.1rem;
 }
 
 .edit-row-main {
@@ -563,14 +593,14 @@ body {
 
 .edit-row-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 1.9rem;
+  grid-template-columns: minmax(0, 1fr) var(--edit-control-h);
   gap: 0.3rem;
-  align-items: center;
+  align-items: stretch;
   min-width: 0;
 }
 
 .edit-row-main.has-room .edit-row-controls {
-  grid-template-columns: 3.4rem minmax(0, 1fr) 1.9rem;
+  grid-template-columns: 3.4rem minmax(0, 1fr) var(--edit-control-h);
 }
 
 .edit-row-main .subject-input {
@@ -596,8 +626,8 @@ body {
   border: 1px solid var(--line);
   background: #fff;
   border-radius: 10px;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: var(--edit-control-h);
+  height: var(--edit-control-h);
   padding: 0;
   font-size: 1.15rem;
   line-height: 1;
@@ -605,6 +635,9 @@ body {
   cursor: pointer;
   flex-shrink: 0;
   justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .remove-slot:active {

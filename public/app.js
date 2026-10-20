@@ -507,9 +507,10 @@ function renderSingleDay(personKey, personData) {
     const row = document.createElement("div");
     row.className = "lesson";
 
-    row.appendChild(renderTimeCell(personKey, slot, slotIndex));
-
     if (editing) {
+      row.appendChild(
+        renderTimeCell(personKey, slot, slotIndex, { hideNumber: true })
+      );
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "remove-slot";
@@ -520,6 +521,7 @@ function renderSingleDay(personKey, personData) {
         renderEditCell(personKey, slot, day.key, cellData, remove)
       );
     } else {
+      row.appendChild(renderTimeCell(personKey, slot, slotIndex));
       row.appendChild(renderViewCell(personData, cellData));
     }
     list.appendChild(row);
@@ -532,15 +534,16 @@ function renderSingleDay(personKey, personData) {
     const addLesson = document.createElement("button");
     addLesson.type = "button";
     addLesson.className = "add-lesson";
-    addLesson.textContent = "+ Legg til time";
+    addLesson.textContent = "Legg til time";
     addLesson.addEventListener("click", () => addLessonSlot(personKey));
 
     const addPause = document.createElement("button");
     addPause.type = "button";
     addPause.className = "add-lesson add-pause";
-    addPause.textContent = "+ Legg til pause";
+    addPause.textContent = "Legg til pause";
     addPause.addEventListener("click", () => addPauseSlot(personKey));
 
+    // Time above pause
     actions.append(addLesson, addPause);
     list.appendChild(actions);
   } else if (!list.children.length) {
@@ -650,14 +653,17 @@ function pauseDisplayName(slot) {
 
 function renderBreakRow(personKey, slot, slotIndex) {
   if (editing) {
-    // Same shell as lessons: time column + name/× body (no Rom, striped default)
+    // Same shell as lessons: time column + striped field (name/×; no Rom)
     const row = document.createElement("div");
     row.className = "lesson break-lesson";
 
-    row.appendChild(renderTimeCell(personKey, slot, slotIndex));
+    row.appendChild(renderTimeCell(personKey, slot, slotIndex, { hideNumber: true }));
 
     const body = document.createElement("div");
     body.className = "lesson-body edit-cell break-edit-cell";
+
+    const wrap = document.createElement("div");
+    wrap.className = "edit-row-with-n";
 
     const main = document.createElement("div");
     main.className = "edit-row-main";
@@ -665,7 +671,10 @@ function renderBreakRow(personKey, slot, slotIndex) {
     const name = document.createElement("input");
     name.className = "subject-input pause-name-input";
     name.placeholder = "Pause";
-    name.value = pauseDisplayName(slot);
+    const rawLabel = String(slot?.label || "").trim();
+    // Default «Pause» stays as gray placeholder, not filled text
+    name.value =
+      !rawLabel || rawLabel.toLowerCase() === "pause" ? "" : rawLabel;
     name.setAttribute("aria-label", "Pausenavn");
     name.addEventListener("input", () => {
       const value = name.value.trim();
@@ -687,7 +696,8 @@ function renderBreakRow(personKey, slot, slotIndex) {
     controls.append(remove);
 
     main.append(name, controls);
-    body.append(main);
+    wrap.append(main);
+    body.append(wrap);
     row.appendChild(body);
     return row;
   }
@@ -704,10 +714,13 @@ function renderBreakRow(personKey, slot, slotIndex) {
   return br;
 }
 
-function renderTimeCell(personKey, slot, slotIndex) {
+function renderTimeCell(personKey, slot, slotIndex, opts = {}) {
   const time = document.createElement("div");
   time.className = "lesson-time";
-  if (slot.n) time.appendChild(el("span", "n", String(slot.n)));
+  // In Rediger, lesson number sits inside the colored/striped field instead
+  if (slot.n && !(editing && opts.hideNumber)) {
+    time.appendChild(el("span", "n", String(slot.n)));
+  }
 
   if (editing) {
     const start = document.createElement("input");
@@ -773,6 +786,11 @@ function renderViewCell(personData, cellData) {
   return body;
 }
 
+function applyEditCellColor(body, colorKey) {
+  for (const key of COLOR_KEYS) body.classList.remove(`bg-${key}`);
+  body.classList.add(colorClass(colorKey));
+}
+
 function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
   const body = document.createElement("div");
   body.className = "lesson-body edit-cell";
@@ -804,6 +822,11 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
   }
   const initialSubject = cellData?.subject || "";
   color.value = subjectColor(initialSubject, cellData?.color || "white");
+  applyEditCellColor(body, color.value);
+
+  const syncFieldColor = (colorKey) => {
+    applyEditCellColor(body, colorKey);
+  };
 
   subject.addEventListener("input", () => {
     const cell = ensure();
@@ -812,6 +835,7 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
       const mapped = subjectColor(cell.subject, cell.color || "white");
       cell.color = mapped;
       color.value = mapped;
+      syncFieldColor(mapped);
     }
     renderDayTabs(draft[person]);
   });
@@ -824,6 +848,7 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
       cell.color = mapped;
       applySubjectColor(cell.subject, mapped);
       color.value = mapped;
+      syncFieldColor(mapped);
     }
     renderDayTabs(draft[person]);
   });
@@ -831,19 +856,29 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
   color.addEventListener("change", () => {
     const cell = ensure();
     cell.color = color.value;
+    syncFieldColor(color.value);
     const subj = (subject.value || cell.subject || "").trim();
     if (subj) {
       cell.subject = subj;
       applySubjectColor(subj, color.value);
       document.querySelectorAll(".lesson-body.edit-cell").forEach((wrap) => {
+        if (wrap.classList.contains("break-edit-cell")) return;
         const subInput = wrap.querySelector(".subject-input");
         const sel = wrap.querySelector(".color-select");
         if (subInput && sel && subInput.value.trim() === subj) {
           sel.value = color.value;
+          applyEditCellColor(wrap, color.value);
         }
       });
     }
   });
+
+  const wrap = document.createElement("div");
+  wrap.className = "edit-row-with-n";
+
+  if (slot.n) {
+    wrap.appendChild(el("span", "edit-lesson-n", String(slot.n)));
+  }
 
   const main = document.createElement("div");
   main.className = "edit-row-main";
@@ -867,7 +902,8 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
   if (removeBtn) controls.append(removeBtn);
 
   main.append(subject, controls);
-  body.append(main);
+  wrap.append(main);
+  body.append(wrap);
 
   return body;
 }
