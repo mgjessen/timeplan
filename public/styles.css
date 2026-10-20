@@ -292,9 +292,7 @@ body {
 .day-card-head {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.55rem;
 }
 
 .day-card-head h3 {
@@ -302,13 +300,6 @@ body {
   font-family: var(--font-display);
   font-size: 1.15rem;
   color: var(--pine);
-}
-
-.day-card-head .ends {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--sea);
-  font-variant-numeric: tabular-nums;
 }
 
 .lesson-list {
@@ -355,10 +346,11 @@ body {
 
 .lesson {
   display: grid;
-  grid-template-columns: 4.85rem minmax(0, 1fr);
-  gap: 0.35rem;
+  /* Wider time column so from–to stays one line; slightly tighter subject box */
+  grid-template-columns: 5.65rem minmax(0, 1fr);
+  gap: 0.3rem;
   align-items: stretch;
-  min-height: 3.25rem;
+  min-height: 2.85rem;
   min-width: 0;
   max-width: 100%;
 }
@@ -402,14 +394,14 @@ body {
 }
 
 .lesson-body {
-  border-radius: 14px;
-  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  padding: 0.45rem 0.55rem;
   border: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.15rem;
-  min-height: 3.25rem;
+  gap: 0.1rem;
+  min-height: 2.85rem;
   min-width: 0;
 }
 
@@ -423,7 +415,7 @@ body {
 
 .lesson-body .subject {
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 0.92rem;
   line-height: 1.2;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -432,7 +424,7 @@ body {
 .lesson-body .room {
   flex: 0 0 auto;
   margin-left: auto;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 700;
   line-height: 1.2;
   opacity: 0.95;
@@ -458,8 +450,8 @@ body {
 
 .break-row.break-view {
   display: grid;
-  grid-template-columns: 4.85rem minmax(0, 1fr);
-  gap: 0.35rem;
+  grid-template-columns: 5.65rem minmax(0, 1fr);
+  gap: 0.3rem;
   align-items: stretch;
   min-width: 0;
   max-width: 100%;
@@ -472,7 +464,7 @@ body {
 }
 
 .break-row.break-view .lesson-time .lbl {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--ink-soft);
   white-space: nowrap;
@@ -482,12 +474,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.4rem;
+  min-height: 2.1rem;
   border-radius: 12px;
   border: 1px dashed var(--line);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--ink-soft);
   background: repeating-linear-gradient(

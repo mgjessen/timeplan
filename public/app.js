@@ -468,21 +468,13 @@ function renderSingleDay(personKey, personData) {
   root.innerHTML = "";
 
   const day = dayMeta(activeDay);
-  const bounds = dayBounds(personData, day.key);
   const card = document.createElement("article");
   card.className = "day-card";
 
+  // Day from–to lives only on the weekday chips — not repeated in the card head
   const head = document.createElement("div");
   head.className = "day-card-head";
   head.appendChild(el("h3", null, day.label));
-  const range = document.createElement("span");
-  range.className = "ends";
-  if (bounds.start || bounds.end) {
-    range.textContent = `${formatTime(bounds.start) || "?"} – ${formatTime(bounds.end) || "?"}`;
-  } else {
-    range.textContent = "Ingen timer";
-  }
-  head.appendChild(range);
   card.appendChild(head);
 
   const list = document.createElement("div");
