@@ -653,8 +653,7 @@ body {
 }
 
 .lesson.lesson-edit.break-lesson {
-  --edit-control-h: 28px; /* tighter controls to match shorter pause rows */
-  padding: 0.2rem;
+  /* Same --edit-control-h / time-input height as lesson rows (38px) */
   min-height: 0;
   background: repeating-linear-gradient(
     -45deg,
@@ -664,13 +663,6 @@ body {
     rgba(230, 238, 234, 0.75) 8px
   ) !important;
   border: 1px dashed var(--line);
-}
-
-.lesson.lesson-edit.break-lesson .time-input {
-  height: var(--edit-control-h);
-  min-height: var(--edit-control-h);
-  padding: 0.2rem 0.15rem;
-  font-size: 0.72rem;
 }
 
 .lesson.lesson-edit .lesson-time {
