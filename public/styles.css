@@ -527,8 +527,7 @@ body {
   min-width: 0;
   max-width: 100%;
   padding: 0.4rem;
-  /* Default white field; .bg-* from chosen lesson color overrides */
-  background: var(--c-white);
+  /* Field fill comes from .bg-* (white by default, chosen lesson color when set) */
 }
 
 .lesson-body.edit-cell input,
