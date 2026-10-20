@@ -68,7 +68,6 @@ body {
   z-index: 6;
   background: #ffffff;
   padding: calc(0.75rem + var(--safe-top)) 1rem 0.45rem;
-  border-bottom: 1px solid rgba(15, 61, 52, 0.06);
 }
 
 .main {
