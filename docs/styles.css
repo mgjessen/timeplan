@@ -365,12 +365,6 @@ body {
   min-width: 0;
 }
 
-.lesson-time .n {
-  font-weight: 800;
-  font-size: 0.9rem;
-  color: var(--pine);
-}
-
 .lesson-time .lbl {
   font-size: 0.68rem;
   line-height: 1.15;
@@ -553,29 +547,6 @@ body {
   color: #b0b8b4;
   opacity: 1;
   font-weight: 500;
-}
-
-.edit-row-with-n {
-  display: grid;
-  grid-template-columns: 1.35rem minmax(0, 1fr);
-  gap: 0.35rem;
-  align-items: stretch;
-  min-width: 0;
-}
-
-.edit-row-with-n:not(:has(.edit-lesson-n)) {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.edit-lesson-n {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 0.95rem;
-  color: var(--pine);
-  line-height: 1;
-  padding-top: 0.1rem;
 }
 
 .edit-row-main {

@@ -524,9 +524,7 @@ function renderSingleDay(personKey, personData) {
     row.className = "lesson";
 
     if (editing) {
-      row.appendChild(
-        renderTimeCell(personKey, slot, slotIndex, { hideNumber: true })
-      );
+      row.appendChild(renderTimeCell(personKey, slot, slotIndex));
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "remove-slot";
@@ -673,13 +671,10 @@ function renderBreakRow(personKey, slot, slotIndex) {
     const row = document.createElement("div");
     row.className = "lesson break-lesson";
 
-    row.appendChild(renderTimeCell(personKey, slot, slotIndex, { hideNumber: true }));
+    row.appendChild(renderTimeCell(personKey, slot, slotIndex));
 
     const body = document.createElement("div");
     body.className = "lesson-body edit-cell break-edit-cell";
-
-    const wrap = document.createElement("div");
-    wrap.className = "edit-row-with-n";
 
     const main = document.createElement("div");
     main.className = "edit-row-main";
@@ -712,8 +707,7 @@ function renderBreakRow(personKey, slot, slotIndex) {
     controls.append(remove);
 
     main.append(name, controls);
-    wrap.append(main);
-    body.append(wrap);
+    body.append(main);
     row.appendChild(body);
     return row;
   }
@@ -730,13 +724,9 @@ function renderBreakRow(personKey, slot, slotIndex) {
   return br;
 }
 
-function renderTimeCell(personKey, slot, slotIndex, opts = {}) {
+function renderTimeCell(personKey, slot, slotIndex) {
   const time = document.createElement("div");
   time.className = "lesson-time";
-  // In Rediger, lesson number sits inside the colored/striped field instead
-  if (slot.n && !(editing && opts.hideNumber)) {
-    time.appendChild(el("span", "n", String(slot.n)));
-  }
 
   if (editing) {
     const start = document.createElement("input");
@@ -891,13 +881,6 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
     }
   });
 
-  const wrap = document.createElement("div");
-  wrap.className = "edit-row-with-n";
-
-  if (slot.n) {
-    wrap.appendChild(el("span", "edit-lesson-n", String(slot.n)));
-  }
-
   const main = document.createElement("div");
   main.className = "edit-row-main";
   if (person === "ole") main.classList.add("has-room");
@@ -920,8 +903,7 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
   if (removeBtn) controls.append(removeBtn);
 
   main.append(subject, controls);
-  wrap.append(main);
-  body.append(wrap);
+  body.append(main);
 
   return body;
 }
