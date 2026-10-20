@@ -24,7 +24,7 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=25" />
+    <link rel="stylesheet" href="styles.css?v=26" />
   </head>
   <body>
     <div class="phone-shell">
@@ -37,18 +37,32 @@
       <main id="planer" class="main">
         <p class="status" id="status" role="status" aria-live="polite"></p>
 
-        <label class="name-edit" id="name-edit" hidden>
-          <span>Klassenavn</span>
-          <input type="text" id="name-input" maxlength="60" />
-        </label>
-
-        <div class="class-tools" id="class-tools" hidden>
-          <button type="button" class="btn btn-ghost" id="btn-add-class">
-            Legg til klasse
-          </button>
-          <button type="button" class="btn btn-ghost" id="btn-remove-class">
-            Fjern klasse
-          </button>
+        <div class="name-edit" id="name-edit" hidden>
+          <div class="name-edit-row">
+            <input
+              type="text"
+              id="name-input"
+              maxlength="60"
+              aria-label="Klassenavn"
+            />
+            <button
+              type="button"
+              class="remove-slot class-icon-btn"
+              id="btn-remove-class"
+              aria-label="Fjern klasse"
+            >
+              ×
+            </button>
+            <button
+              type="button"
+              class="remove-slot class-icon-btn"
+              id="btn-add-class"
+              aria-label="Legg til klasse"
+            >
+              +
+            </button>
+            <span class="name-edit-label">Klassenavn</span>
+          </div>
         </div>
 
         <div class="file-tools" id="file-tools" hidden>
@@ -88,6 +102,6 @@
       </main>
     </div>
 
-    <script src="app.js?v=23"></script>
+    <script src="app.js?v=26"></script>
   </body>
 </html>

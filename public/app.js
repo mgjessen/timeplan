@@ -50,7 +50,6 @@ const els = {
   scheduleRoot: document.getElementById("schedule-root"),
   nameEdit: document.getElementById("name-edit"),
   nameInput: document.getElementById("name-input"),
-  classTools: document.getElementById("class-tools"),
   btnAddClass: document.getElementById("btn-add-class"),
   btnRemoveClass: document.getElementById("btn-remove-class"),
 };
@@ -591,22 +590,19 @@ function render() {
   els.nameEdit.hidden = !editing;
   if (editing) els.nameInput.value = name;
 
-  if (els.classTools) {
-    els.classTools.hidden = !editing;
-    if (els.btnAddClass) {
-      els.btnAddClass.disabled = saving || keys.length >= MAX_CLASSES;
-      els.btnAddClass.setAttribute(
-        "aria-disabled",
-        String(keys.length >= MAX_CLASSES)
-      );
-    }
-    if (els.btnRemoveClass) {
-      els.btnRemoveClass.disabled = saving || keys.length <= MIN_CLASSES;
-      els.btnRemoveClass.setAttribute(
-        "aria-disabled",
-        String(keys.length <= MIN_CLASSES)
-      );
-    }
+  if (els.btnAddClass) {
+    els.btnAddClass.disabled = saving || keys.length >= MAX_CLASSES;
+    els.btnAddClass.setAttribute(
+      "aria-disabled",
+      String(keys.length >= MAX_CLASSES)
+    );
+  }
+  if (els.btnRemoveClass) {
+    els.btnRemoveClass.disabled = saving || keys.length <= MIN_CLASSES;
+    els.btnRemoveClass.setAttribute(
+      "aria-disabled",
+      String(keys.length <= MIN_CLASSES)
+    );
   }
 
   renderDayTabs(person);

@@ -206,8 +206,7 @@ body {
 }
 
 .name-edit {
-  display: grid;
-  gap: 0.3rem;
+  --edit-control-h: 38px;
   margin-bottom: 0.75rem;
 }
 
@@ -215,45 +214,50 @@ body {
   display: none !important;
 }
 
-.name-edit span {
+.name-edit-row {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    var(--edit-control-h)
+    var(--edit-control-h)
+    auto;
+  gap: 0.35rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.name-edit-label {
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--sea);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  white-space: nowrap;
+  padding-left: 0.15rem;
 }
 
 .name-edit input {
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  padding: 0.35rem 0.55rem;
   font: inherit;
   font-weight: 700;
   background: rgba(255, 255, 255, 0.95);
-  min-height: 46px;
+  height: var(--edit-control-h);
+  min-height: var(--edit-control-h);
 }
 
-.class-tools {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.55rem;
-  margin: 0 0 0.75rem;
+.name-edit .class-icon-btn {
+  width: var(--edit-control-h);
+  height: var(--edit-control-h);
+  justify-self: center;
 }
 
-.class-tools[hidden] {
-  display: none !important;
-}
-
-.class-tools .btn {
-  /* Match Eksporter / Importer */
-  flex: 1;
-  min-height: 44px;
-  font-weight: 600;
-}
-
-.class-tools .btn:disabled {
-  opacity: 0.45;
+.name-edit .class-icon-btn:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
