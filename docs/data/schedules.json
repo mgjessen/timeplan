@@ -1,0 +1,483 @@
+{
+  "version": 5,
+  "schoolYear": "2026/2027",
+  "subjectColors": {
+    "Naturfag": "green",
+    "UTV": "yellow",
+    "Samfunn": "orange",
+    "KRLE": "brown",
+    "Engelsk": "blue",
+    "GYM": "yellow",
+    "Matte": "pink",
+    "Musikk": "purple",
+    "Språk/Arbeids.l.fag": "pink",
+    "Heiatimen": "orange",
+    "Valgfag": "grey",
+    "KRØ": "green",
+    "Heiatimen - 8A": "orange",
+    "Samf.": "blue",
+    "Norsk - 8A": "yellow",
+    "Kunst & Håndverk": "purple",
+    "Engelsk - 8A": "blue",
+    "Språk": "red",
+    "KRØ - 8A": "green"
+  },
+  "maja": {
+    "name": "Haumyrheia 10A",
+    "title": "Haumyrheia 10A",
+    "slots": [
+      {
+        "id": "m1",
+        "label": "08.15 - 09.15",
+        "type": "lesson",
+        "start": "08:15",
+        "end": "09:15"
+      },
+      {
+        "id": "m2",
+        "label": "09.25 - 10.25",
+        "type": "lesson",
+        "start": "09:25",
+        "end": "10:25"
+      },
+      {
+        "id": "m3",
+        "label": "10.35 - 11.35",
+        "type": "lesson",
+        "start": "10:35",
+        "end": "11:35"
+      },
+      {
+        "id": "m-spis",
+        "label": "SPISEFRI",
+        "type": "break"
+      },
+      {
+        "id": "m4",
+        "label": "12.15 - 13.15",
+        "type": "lesson",
+        "start": "12:15",
+        "end": "13:15"
+      },
+      {
+        "id": "m5",
+        "label": "13.25 - 14.25",
+        "type": "lesson",
+        "start": "13:25",
+        "end": "14:25"
+      },
+      {
+        "id": "m6",
+        "label": "14.30 - 15.00",
+        "type": "lesson",
+        "start": "14:30",
+        "end": "15:00"
+      }
+    ],
+    "grid": {
+      "m1": {
+        "man": {
+          "subject": "Naturfag",
+          "color": "green"
+        },
+        "tir": {
+          "subject": "UTV",
+          "color": "yellow"
+        },
+        "ons": {
+          "subject": "Samfunn",
+          "color": "orange"
+        },
+        "tor": {
+          "subject": "Naturfag",
+          "color": "green"
+        },
+        "fre": {
+          "subject": "FRI",
+          "color": "white"
+        }
+      },
+      "m2": {
+        "man": {
+          "subject": "KRLE",
+          "color": "brown"
+        },
+        "tir": {
+          "subject": "Engelsk",
+          "color": "blue"
+        },
+        "ons": {
+          "subject": "Engelsk",
+          "color": "blue"
+        },
+        "tor": {
+          "subject": "Samfunn",
+          "color": "orange"
+        },
+        "fre": {
+          "subject": "KRLE",
+          "color": "brown"
+        }
+      },
+      "m3": {
+        "man": {
+          "subject": "GYM",
+          "color": "yellow"
+        },
+        "tir": {
+          "subject": "Norsk",
+          "color": "white"
+        },
+        "ons": {
+          "subject": "GYM",
+          "color": "yellow"
+        },
+        "tor": {
+          "subject": "Matte",
+          "color": "pink"
+        },
+        "fre": {
+          "subject": "Matte",
+          "color": "pink"
+        }
+      },
+      "m-spis": {
+        "man": null,
+        "tir": null,
+        "ons": null,
+        "tor": null,
+        "fre": null
+      },
+      "m4": {
+        "man": {
+          "subject": "Musikk",
+          "color": "purple"
+        },
+        "tir": {
+          "subject": "Matte",
+          "color": "pink"
+        },
+        "ons": {
+          "subject": "Språk/Arbeids.l.fag",
+          "color": "pink"
+        },
+        "tor": {
+          "subject": "Norsk",
+          "color": "white"
+        },
+        "fre": {
+          "subject": "Norsk",
+          "color": "white"
+        }
+      },
+      "m5": {
+        "man": {
+          "subject": "Heiatimen",
+          "color": "orange"
+        },
+        "tir": {
+          "subject": "Valgfag",
+          "color": "grey"
+        },
+        "ons": null,
+        "tor": {
+          "subject": "Språk/Arbeids.l.fag",
+          "color": "pink"
+        },
+        "fre": {
+          "subject": "Musikk",
+          "color": "purple"
+        }
+      },
+      "m6": {
+        "man": null,
+        "tir": null,
+        "ons": null,
+        "tor": null,
+        "fre": null
+      }
+    },
+    "klass": "10A"
+  },
+  "ole": {
+    "name": "Haumyrheia 8A",
+    "title": "Haumyrheia 8A",
+    "klass": "8A",
+    "slots": [
+      {
+        "id": "o1",
+        "n": 1,
+        "label": "08.15 - 09.15",
+        "type": "lesson",
+        "start": "08:15",
+        "end": "09:15"
+      },
+      {
+        "id": "o-p1",
+        "label": "09.15 - 09.25",
+        "type": "pause",
+        "start": "09:15",
+        "end": "09:25"
+      },
+      {
+        "id": "o2",
+        "n": 2,
+        "label": "09.25 - 10.25",
+        "type": "lesson",
+        "start": "09:25",
+        "end": "10:25"
+      },
+      {
+        "id": "o-p2",
+        "label": "10.25 - 10.35",
+        "type": "pause",
+        "start": "10:25",
+        "end": "10:35"
+      },
+      {
+        "id": "o3",
+        "n": 3,
+        "label": "10.35 - 11.35",
+        "type": "lesson",
+        "start": "10:35",
+        "end": "11:35"
+      },
+      {
+        "id": "o-lunsj",
+        "label": "11.35 - 12.15",
+        "type": "lunsj",
+        "start": "11:35",
+        "end": "12:15"
+      },
+      {
+        "id": "o4",
+        "n": 4,
+        "label": "12.15 - 13.15",
+        "type": "lesson",
+        "start": "12:15",
+        "end": "13:15"
+      },
+      {
+        "id": "o-p3",
+        "label": "13.15 - 13.25",
+        "type": "pause",
+        "start": "13:15",
+        "end": "13:25"
+      },
+      {
+        "id": "o5",
+        "n": 5,
+        "label": "13.25 - 14.25",
+        "type": "lesson",
+        "start": "13:25",
+        "end": "14:25"
+      },
+      {
+        "id": "o-p4",
+        "label": "14.25 - 14.30",
+        "type": "pause",
+        "start": "14:25",
+        "end": "14:30"
+      },
+      {
+        "id": "o6",
+        "n": 6,
+        "label": "14.30 - 15.30",
+        "type": "lesson",
+        "start": "14:30",
+        "end": "15:30"
+      }
+    ],
+    "grid": {
+      "o1": {
+        "man": {
+          "subject": "KRØ",
+          "room": "Gymsal",
+          "teacher": "Vetle",
+          "color": "green"
+        },
+        "tir": {
+          "subject": "Heiatimen - 8A",
+          "room": "107",
+          "teacher": "Vetle, Anette",
+          "color": "orange"
+        },
+        "ons": {
+          "subject": "Samf.",
+          "room": "107",
+          "teacher": "Anette",
+          "color": "blue"
+        },
+        "tor": {
+          "subject": "Naturfag",
+          "room": "Naturfag",
+          "teacher": "Bjørn Atle",
+          "color": "green"
+        },
+        "fre": null
+      },
+      "o-p1": {
+        "man": null,
+        "tir": null,
+        "ons": null,
+        "tor": null,
+        "fre": null
+      },
+      "o2": {
+        "man": {
+          "subject": "KRLE",
+          "room": "107",
+          "teacher": "Alf Tor",
+          "color": "orange"
+        },
+        "tir": {
+          "subject": "Matte",
+          "room": "107",
+          "teacher": "Elizabeth & Bjørn Atle",
+          "color": "pink"
+        },
+        "ons": {
+          "subject": "Norsk - 8A",
+          "room": "107",
+          "teacher": "Vetle & Inger Lise",
+          "color": "yellow"
+        },
+        "tor": {
+          "subject": "KRLE",
+          "room": "107",
+          "teacher": "Alf Tor",
+          "color": "orange"
+        },
+        "fre": {
+          "subject": "Kunst & Håndverk",
+          "room": "Sløyd",
+          "teacher": "Alf Tor",
+          "color": "purple"
+        }
+      },
+      "o-p2": {
+        "man": null,
+        "tir": null,
+        "ons": null,
+        "tor": null,
+        "fre": null
+      },
+      "o3": {
+        "man": {
+          "subject": "Samf.",
+          "room": "107",
+          "teacher": "Anette",
+          "color": "blue"
+        },
+        "tir": {
+          "subject": "Engelsk - 8A",
+          "room": "107",
+          "teacher": "Liv/Julie",
+          "color": "blue"
+        },
+        "ons": {
+          "subject": "Språk",
+          "color": "red"
+        },
+        "tor": {
+          "subject": "Språk",
+          "color": "red"
+        },
+        "fre": {
+          "subject": "Norsk - 8A",
+          "room": "107",
+          "teacher": "Vetle",
+          "color": "yellow"
+        }
+      },
+      "o-lunsj": {
+        "man": null,
+        "tir": null,
+        "ons": null,
+        "tor": null,
+        "fre": null
+      },
+      "o4": {
+        "man": {
+          "subject": "Naturfag",
+          "room": "107",
+          "teacher": "Bjørn Atle",
+          "color": "green"
+        },
+        "tir": {
+          "subject": "Norsk - 8A",
+          "room": "107",
+          "teacher": "Vetle & Inger Lise",
+          "color": "yellow"
+        },
+        "ons": {
+          "subject": "Matte",
+          "room": "107",
+          "teacher": "Elizabeth & Bjørn Atle",
+          "color": "pink"
+        },
+        "tor": {
+          "subject": "Matte",
+          "room": "107",
+          "teacher": "Elizabeth & Bjørn Atle",
+          "color": "pink"
+        },
+        "fre": {
+          "subject": "Engelsk - 8A",
+          "room": "107",
+          "teacher": "Vetle & Julie",
+          "color": "blue"
+        }
+      },
+      "o-p3": {
+        "man": null,
+        "tir": null,
+        "ons": null,
+        "tor": null,
+        "fre": null
+      },
+      "o5": {
+        "man": {
+          "subject": "Norsk - 8A",
+          "room": "107",
+          "teacher": "Vetle",
+          "color": "yellow"
+        },
+        "tir": {
+          "subject": "KRØ - 8A",
+          "room": "Gymsal",
+          "teacher": "Vetle",
+          "color": "green"
+        },
+        "ons": null,
+        "tor": {
+          "subject": "Valgfag",
+          "color": "grey"
+        },
+        "fre": {
+          "subject": "Samf.",
+          "room": "107",
+          "teacher": "Anette",
+          "color": "blue"
+        }
+      },
+      "o-p4": {
+        "man": null,
+        "tir": null,
+        "ons": null,
+        "tor": null,
+        "fre": null
+      },
+      "o6": {
+        "man": null,
+        "tir": null,
+        "ons": null,
+        "tor": {
+          "subject": "Valgfag",
+          "color": "grey"
+        },
+        "fre": null
+      }
+    }
+  }
+}
