@@ -217,10 +217,10 @@ body {
 .name-edit-row {
   display: grid;
   grid-template-columns:
+    auto
     minmax(0, 1fr)
     var(--edit-control-h)
-    var(--edit-control-h)
-    auto;
+    var(--edit-control-h);
   gap: 0.35rem;
   align-items: center;
   min-width: 0;
@@ -233,7 +233,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
-  padding-left: 0.15rem;
+  padding-right: 0.15rem;
 }
 
 .name-edit input {
