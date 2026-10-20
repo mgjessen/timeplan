@@ -647,13 +647,14 @@ function renderViewCell(personData, cellData) {
 
   const color = subjectColor(cellData.subject, cellData.color);
   body.classList.add(colorClass(color));
-  body.appendChild(el("span", "subject", cellData.subject));
-  if (cellData.room || cellData.teacher) {
-    const parts = [];
-    if (cellData.room) parts.push(`Rom: ${cellData.room}`);
-    if (cellData.teacher) parts.push(cellData.teacher);
-    body.appendChild(el("span", "meta", parts.join(" · ")));
+  const line = document.createElement("div");
+  line.className = "subject-line";
+  line.appendChild(el("span", "subject", cellData.subject));
+  const room = String(cellData.room || "").trim();
+  if (room) {
+    line.appendChild(el("span", "room", room));
   }
+  body.appendChild(line);
   return body;
 }
 
@@ -668,7 +669,6 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
         subject: "",
         color: "white",
         room: "",
-        teacher: "",
       };
     }
     return draft[person].grid[slot.id][dayKey];
@@ -738,20 +738,15 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
 
   if (person === "ole") {
     const room = document.createElement("input");
+    room.className = "room-input";
     room.placeholder = "Rom";
     room.value = cellData?.room || "";
     room.addEventListener("input", () => {
       ensure().room = room.value;
     });
-    const teacher = document.createElement("input");
-    teacher.placeholder = "Lærer";
-    teacher.value = cellData?.teacher || "";
-    teacher.addEventListener("input", () => {
-      ensure().teacher = teacher.value;
-    });
     const extra = document.createElement("div");
     extra.className = "edit-row-extra";
-    extra.append(room, teacher);
+    extra.append(room);
     body.append(extra);
   }
 
@@ -809,8 +804,7 @@ function sanitize(data) {
         }
         const subject = String(cell.subject || "").trim();
         const room = String(cell.room || "").trim();
-        const teacher = String(cell.teacher || "").trim();
-        if (!subject && !room && !teacher) {
+        if (!subject && !room) {
           row[day.key] = null;
         } else {
           let color = cell.color || "white";
@@ -821,7 +815,6 @@ function sanitize(data) {
           }
           row[day.key] = { subject, color };
           if (room) row[day.key].room = room;
-          if (teacher) row[day.key].teacher = teacher;
         }
       }
       out[person].grid[slot.id] = row;

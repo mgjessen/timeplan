@@ -391,16 +391,31 @@ body {
   min-width: 0;
 }
 
+.lesson-body .subject-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .lesson-body .subject {
   font-weight: 800;
   font-size: 1rem;
   line-height: 1.2;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.lesson-body .meta {
-  font-size: 0.78rem;
-  line-height: 1.3;
-  opacity: 0.9;
+.lesson-body .room {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0.95;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .lesson-body.empty {
@@ -500,7 +515,7 @@ body {
 
 .edit-row-extra {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.3rem;
   min-width: 0;
 }
