@@ -246,14 +246,48 @@ body {
 }
 
 .class-tools .btn {
+  /* Match Eksporter / Importer */
+  flex: 1;
   min-height: 44px;
   font-weight: 600;
-  font-size: 0.9rem;
 }
 
 .class-tools .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* Long text in boxes scrolls horizontally site-wide */
+.scroll-text,
+.tab .tab-school,
+.tab .tab-class,
+.day-tab .d,
+.day-tab .t,
+.lesson-body .subject,
+.break-body,
+.app-title,
+.status,
+.day-card-head h3 {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lesson-body .subject {
+  flex: 1 1 auto;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.lesson-body.edit-cell input,
+.lesson-body.edit-cell select,
+.name-edit input,
+.time-input {
+  overflow-x: auto;
+  text-overflow: clip;
 }
 
 .day-tabs {
@@ -445,7 +479,6 @@ body {
   font-size: 0.92rem;
   line-height: 1.2;
   min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 .lesson-body .room {
@@ -498,10 +531,12 @@ body {
 }
 
 .break-body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  align-content: center;
+  text-align: center;
   min-height: 2.1rem;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
   border-radius: 12px;
   border: 1px dashed var(--line);
   letter-spacing: 0.04em;
