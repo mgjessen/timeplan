@@ -309,7 +309,7 @@ body {
 
 .add-slot-actions {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 0.4rem;
   margin-top: 0.25rem;
 }
