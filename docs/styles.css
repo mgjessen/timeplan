@@ -13,7 +13,6 @@
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --action-h: 4.75rem;
   --phone-max: 430px;
 
   --c-red: #e25555;
