@@ -164,13 +164,21 @@ function splitTabLabel(name) {
   return { school: "", klass: String(name || "").trim() };
 }
 
+const EMPTY_TIME = "00:00";
+
+function normalizeTime(t) {
+  const s = String(t || "").trim();
+  return s || EMPTY_TIME;
+}
+
 function formatTime(t) {
-  return String(t || "").replace(":", ".");
+  return normalizeTime(t).replace(":", ".");
 }
 
 /** Digits-only phone entry → TT:MM (e.g. 0815 → 08:15). Max 4 digits. */
 function formatTimeInputValue(raw) {
   const digits = String(raw || "").replace(/\D/g, "").slice(0, 4);
+  if (!digits) return "";
   if (digits.length <= 2) return digits;
   return `${digits.slice(0, 2)}:${digits.slice(2)}`;
 }
@@ -190,13 +198,15 @@ function bindTimeInput(input, onChange) {
     }
     onChange(formatted);
   });
+  input.addEventListener("blur", () => {
+    if (String(input.value || "").trim()) return;
+    input.value = EMPTY_TIME;
+    onChange(EMPTY_TIME);
+  });
 }
 
 function slotDisplayLabel(slot) {
-  if (slot.start && slot.end) {
-    return `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
-  }
-  return slot.label || "";
+  return `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
 }
 
 /** First lesson with subject → start; last with subject → end */
@@ -660,8 +670,8 @@ function renderDayTabs(person) {
     btn.setAttribute("aria-pressed", String(day.key === activeDay));
     btn.setAttribute("aria-label", day.label);
     btn.appendChild(el("span", "d", day.short));
-    btn.appendChild(el("span", "t start", formatTime(bounds.start) || "—"));
-    btn.appendChild(el("span", "t end", formatTime(bounds.end) || "—"));
+    btn.appendChild(el("span", "t start", formatTime(bounds.start)));
+    btn.appendChild(el("span", "t end", formatTime(bounds.end)));
     btn.addEventListener("click", () => setActiveDay(day.key));
     root.appendChild(btn);
   }
@@ -810,9 +820,9 @@ function addLessonSlot(personKey) {
     id,
     n: lessonCount + 1,
     type: "lesson",
-    start: "",
-    end: "",
-    label: "",
+    start: EMPTY_TIME,
+    end: EMPTY_TIME,
+    label: `${formatTime(EMPTY_TIME)} - ${formatTime(EMPTY_TIME)}`,
   });
   person.grid[id] = {
     man: null,
@@ -831,8 +841,8 @@ function addPauseSlot(personKey) {
   person.slots.push({
     id,
     type: "pause",
-    start: "",
-    end: "",
+    start: EMPTY_TIME,
+    end: EMPTY_TIME,
     label: "Pause",
   });
   render();
@@ -897,7 +907,7 @@ function renderBreakRow(personKey, slot, slotIndex) {
   br.className = "break-row break-view";
   const time = document.createElement("div");
   time.className = "lesson-time";
-  time.appendChild(el("span", "lbl", slotDisplayLabel(slot) || "—"));
+  time.appendChild(el("span", "lbl", slotDisplayLabel(slot)));
   const body = document.createElement("div");
   body.className = "break-body";
   body.textContent = pauseDisplayName(slot);
@@ -915,11 +925,11 @@ function renderTimeCell(personKey, slot, slotIndex) {
     start.inputMode = "numeric";
     start.autocomplete = "off";
     start.className = "time-input";
-    start.placeholder = "08:15";
-    start.value = formatTimeInputValue(slot.start || "");
+    start.placeholder = EMPTY_TIME;
+    start.value = formatTimeInputValue(normalizeTime(slot.start));
     start.setAttribute("aria-label", "Starttid");
     bindTimeInput(start, (value) => {
-      draft[personKey].slots[slotIndex].start = value;
+      draft[personKey].slots[slotIndex].start = value || EMPTY_TIME;
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
@@ -928,11 +938,11 @@ function renderTimeCell(personKey, slot, slotIndex) {
     end.inputMode = "numeric";
     end.autocomplete = "off";
     end.className = "time-input";
-    end.placeholder = "09:15";
-    end.value = formatTimeInputValue(slot.end || "");
+    end.placeholder = EMPTY_TIME;
+    end.value = formatTimeInputValue(normalizeTime(slot.end));
     end.setAttribute("aria-label", "Sluttid");
     bindTimeInput(end, (value) => {
-      draft[personKey].slots[slotIndex].end = value;
+      draft[personKey].slots[slotIndex].end = value || EMPTY_TIME;
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
@@ -947,9 +957,7 @@ function syncSlotLabel(personKey, slotIndex) {
   const slot = draft[personKey].slots[slotIndex];
   // Pause/lunsj keep a name in label; only lesson rows sync label from times
   if (slot.type !== "lesson") return;
-  if (slot.start && slot.end) {
-    slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
-  }
+  slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
 }
 
 function renderViewCell(personData, cellData) {
@@ -1145,9 +1153,9 @@ function sanitize(data) {
     delete out[person].subjectColors;
 
     for (const slot of out[person].slots) {
-      slot.start = String(slot.start || "").trim();
-      slot.end = String(slot.end || "").trim();
-      if (slot.type === "lesson" && slot.start && slot.end) {
+      slot.start = normalizeTime(slot.start);
+      slot.end = normalizeTime(slot.end);
+      if (slot.type === "lesson") {
         slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
       } else if (slot.type !== "lesson") {
         const pauseName = String(slot.label || "").trim();
