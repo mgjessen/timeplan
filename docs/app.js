@@ -27,9 +27,13 @@ const COLORS = [
 const COLOR_KEYS = COLORS.map((c) => c.key);
 
 /** localStorage on GitHub Pages (LogPad-style); Express API when `npm start`. */
-const STORAGE_KEY = "timeplan-schedules-v7";
-const LEGACY_STORAGE_KEYS = ["timeplan-schedules-v6", "timeplan-schedules-v5"];
-const DATA_VERSION = 7;
+const STORAGE_KEY = "timeplan-schedules-v8";
+const LEGACY_STORAGE_KEYS = [
+  "timeplan-schedules-v7",
+  "timeplan-schedules-v6",
+  "timeplan-schedules-v5",
+];
+const DATA_VERSION = 8;
 
 /** @type {'api' | 'local' | null} */
 let backend = null;
@@ -65,6 +69,23 @@ function isClassRecord(value) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
+function hasLegacySlotsGrid(person) {
+  return (
+    isClassRecord(person) &&
+    Array.isArray(person.slots) &&
+    person.grid &&
+    typeof person.grid === "object"
+  );
+}
+
+function hasPerDaySlots(person) {
+  return isClassRecord(person) && person.days && typeof person.days === "object";
+}
+
+function isClassSchedule(person) {
+  return hasPerDaySlots(person) || hasLegacySlotsGrid(person);
+}
+
 /** Ordered class keys for a schedule payload (1–4). */
 function classKeys(data) {
   if (!data || typeof data !== "object") return [];
@@ -78,13 +99,7 @@ function classKeys(data) {
     keys = LEGACY_CLASS_KEYS.filter((k) => isClassRecord(data[k]));
   }
   if (!keys.length) {
-    keys = Object.keys(data).filter(
-      (k) =>
-        isClassRecord(data[k]) &&
-        Array.isArray(data[k].slots) &&
-        data[k].grid &&
-        typeof data[k].grid === "object"
-    );
+    keys = Object.keys(data).filter((k) => isClassSchedule(data[k]));
   }
   return keys.slice(0, MAX_CLASSES);
 }
@@ -95,13 +110,93 @@ function ensureActivePerson(data) {
   if (!keys.includes(activePerson)) activePerson = keys[0];
 }
 
+function emptyDayBuckets() {
+  const days = {};
+  for (const day of WEEKDAYS) {
+    days[day.key] = { slots: [] };
+  }
+  return days;
+}
+
 function blankClass(name) {
   return {
     name,
     title: name,
-    slots: [],
-    grid: {},
+    days: emptyDayBuckets(),
   };
+}
+
+/**
+ * Migrate shared slots+grid → independent per-day slot lists.
+ * Each weekday gets its own copy so start/end/add/remove never clip other days.
+ */
+function migratePersonToDays(person) {
+  if (!person || typeof person !== "object") return person;
+  if (hasPerDaySlots(person) && !hasLegacySlotsGrid(person)) {
+    ensureDayBuckets(person);
+    return person;
+  }
+
+  const days = emptyDayBuckets();
+  const sharedSlots = Array.isArray(person.slots) ? person.slots : [];
+  const grid = person.grid && typeof person.grid === "object" ? person.grid : {};
+
+  for (const day of WEEKDAYS) {
+    const daySlotsList = [];
+    for (const slot of sharedSlots) {
+      const baseId = slot.id || `s${daySlotsList.length}`;
+      if (slot.type === "lesson") {
+        const cell = grid[slot.id]?.[day.key] || null;
+        daySlotsList.push({
+          id: `${baseId}-${day.key}`,
+          n: slot.n,
+          type: "lesson",
+          start: slot.start,
+          end: slot.end,
+          label: slot.label,
+          subject: cell?.subject ? String(cell.subject) : "",
+          color: cell?.color || "white",
+          room: cell?.room ? String(cell.room) : "",
+        });
+      } else {
+        daySlotsList.push({
+          id: `${baseId}-${day.key}`,
+          type: slot.type || "pause",
+          start: slot.start,
+          end: slot.end,
+          label: slot.label,
+        });
+      }
+    }
+    days[day.key] = { slots: daySlotsList };
+  }
+
+  person.days = days;
+  delete person.slots;
+  delete person.grid;
+  return person;
+}
+
+function ensureDayBuckets(person) {
+  if (!person.days || typeof person.days !== "object") {
+    person.days = emptyDayBuckets();
+  }
+  for (const day of WEEKDAYS) {
+    if (!person.days[day.key] || typeof person.days[day.key] !== "object") {
+      person.days[day.key] = { slots: [] };
+    }
+    if (!Array.isArray(person.days[day.key].slots)) {
+      person.days[day.key].slots = [];
+    }
+  }
+}
+
+/** Slots for one weekday only (independent list). */
+function daySlots(person, dayKey = activeDay) {
+  if (!person) return [];
+  if (hasLegacySlotsGrid(person)) migratePersonToDays(person);
+  ensureDayBuckets(person);
+  return person.days[dayKey]?.slots || [];
 }
 
 function defaultDayKey(now = new Date()) {
@@ -212,9 +307,19 @@ function sortSlotsChronologically(slots) {
     .map(({ slot }) => slot);
 }
 
+function sortDaySlots(person, dayKey) {
+  if (!person) return;
+  const slots = daySlots(person, dayKey);
+  person.days[dayKey].slots = sortSlotsChronologically(slots);
+}
+
 function sortPersonSlots(person) {
-  if (!person || !Array.isArray(person.slots)) return;
-  person.slots = sortSlotsChronologically(person.slots);
+  if (!person) return;
+  if (hasLegacySlotsGrid(person)) migratePersonToDays(person);
+  ensureDayBuckets(person);
+  for (const day of WEEKDAYS) {
+    sortDaySlots(person, day.key);
+  }
 }
 
 function sortAllClassSlots(data) {
@@ -262,14 +367,13 @@ function slotDisplayLabel(slot) {
   return `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
 }
 
-/** First lesson with subject → start; last with subject → end */
+/** First lesson with subject → start; last with subject → end (this day only). */
 function dayBounds(person, dayKey) {
   let start = "";
   let end = "";
-  for (const slot of person.slots || []) {
+  for (const slot of daySlots(person, dayKey)) {
     if (slot.type !== "lesson") continue;
-    const cell = person.grid?.[slot.id]?.[dayKey];
-    if (!cell?.subject) continue;
+    if (!String(slot.subject || "").trim()) continue;
     if (!start && slot.start) start = slot.start;
     if (slot.end) end = slot.end;
   }
@@ -287,19 +391,18 @@ function subjectColor(subject, fallback = "white") {
   return COLOR_KEYS.includes(fallback) ? fallback : "white";
 }
 
-/** Apply color to a subject in BOTH classes */
+/** Apply color to a subject in ALL classes / days */
 function applySubjectColor(subject, color) {
   if (!draft || !subject) return;
   if (!draft.subjectColors) draft.subjectColors = {};
   draft.subjectColors[subject] = color;
   for (const personKey of classKeys(draft)) {
     const person = draft[personKey];
-    for (const slot of person.slots || []) {
-      const row = person.grid?.[slot.id];
-      if (!row) continue;
-      for (const day of WEEKDAYS) {
-        const cell = row[day.key];
-        if (cell?.subject === subject) cell.color = color;
+    for (const day of WEEKDAYS) {
+      for (const slot of daySlots(person, day.key)) {
+        if (slot.type === "lesson" && slot.subject === subject) {
+          slot.color = color;
+        }
       }
     }
   }
@@ -309,12 +412,7 @@ function looksLikeSchedules(data) {
   if (!data || typeof data !== "object") return false;
   const keys = classKeys(data);
   if (keys.length < MIN_CLASSES) return false;
-  return keys.every(
-    (k) =>
-      Array.isArray(data[k].slots) &&
-      data[k].grid &&
-      typeof data[k].grid === "object"
-  );
+  return keys.every((k) => isClassSchedule(data[k]));
 }
 
 function emptySchedules() {
@@ -331,12 +429,23 @@ function emptySchedules() {
 function isScheduleEmpty(data) {
   if (!data) return true;
   for (const key of classKeys(data)) {
-    for (const slot of data[key]?.slots || []) {
-      if (slot.type !== "lesson") continue;
-      const row = data[key].grid?.[slot.id];
-      if (!row) continue;
-      for (const day of WEEKDAYS) {
-        if (row[day.key]?.subject) return false;
+    const person = data[key];
+    if (hasLegacySlotsGrid(person)) {
+      for (const slot of person.slots || []) {
+        if (slot.type !== "lesson") continue;
+        const row = person.grid?.[slot.id];
+        if (!row) continue;
+        for (const day of WEEKDAYS) {
+          if (row[day.key]?.subject) return false;
+        }
+      }
+      continue;
+    }
+    for (const day of WEEKDAYS) {
+      for (const slot of daySlots(person, day.key)) {
+        if (slot.type === "lesson" && String(slot.subject || "").trim()) {
+          return false;
+        }
       }
     }
   }
@@ -346,13 +455,21 @@ function isScheduleEmpty(data) {
 function stripTeachersFromData(data) {
   for (const key of classKeys(data)) {
     const person = data[key];
-    if (!person?.grid) continue;
-    for (const row of Object.values(person.grid)) {
-      if (!row || typeof row !== "object") continue;
-      for (const day of Object.keys(row)) {
-        const cell = row[day];
-        if (!cell || typeof cell !== "object") continue;
-        delete cell.teacher;
+    if (hasLegacySlotsGrid(person)) {
+      if (!person?.grid) continue;
+      for (const row of Object.values(person.grid)) {
+        if (!row || typeof row !== "object") continue;
+        for (const day of Object.keys(row)) {
+          const cell = row[day];
+          if (!cell || typeof cell !== "object") continue;
+          delete cell.teacher;
+        }
+      }
+      continue;
+    }
+    for (const day of WEEKDAYS) {
+      for (const slot of daySlots(person, day.key)) {
+        delete slot.teacher;
       }
     }
   }
@@ -379,26 +496,26 @@ function normalizeLoaded(raw) {
 
   for (const key of [...Object.keys(data)]) {
     if (keys.includes(key)) continue;
-    if (
-      isClassRecord(data[key]) &&
-      Array.isArray(data[key].slots) &&
-      data[key].grid
-    ) {
+    if (isClassSchedule(data[key])) {
       delete data[key];
     }
   }
 
   keys.forEach((key, i) => {
-    if (!data[key].grid || typeof data[key].grid !== "object") {
-      data[key].grid = {};
-    }
-    if (!Array.isArray(data[key].slots)) data[key].slots = [];
+    migratePersonToDays(data[key]);
+    ensureDayBuckets(data[key]);
     if (data[key]?.subjectColors) delete data[key].subjectColors;
     if (typeof data[key].name !== "string" || !data[key].name.trim()) {
       data[key].name = `Klasse ${i + 1}`;
     }
     data[key].title = data[key].name;
+    // Drop any leftover shared structure
+    delete data[key].slots;
+    delete data[key].grid;
     sortPersonSlots(data[key]);
+    for (const day of WEEKDAYS) {
+      renumberDayLessons(data[key], day.key);
+    }
   });
   stripTeachersFromData(data);
   return data;
@@ -415,7 +532,7 @@ function readLocal() {
     }
     if (!raw) return null;
     const data = normalizeLoaded(JSON.parse(raw));
-    // Persist scrubbed v6 copy; drop legacy keys
+    // Persist scrubbed v8 copy; drop legacy keys
     writeLocal(data);
     for (const key of LEGACY_STORAGE_KEYS) {
       try {
@@ -749,19 +866,24 @@ function renderSingleDay(personKey, personData) {
   const list = document.createElement("div");
   list.className = "lesson-list";
 
-  (personData.slots || []).forEach((slot, slotIndex) => {
+  const slots = daySlots(personData, day.key);
+
+  slots.forEach((slot, slotIndex) => {
     if (slot.type !== "lesson") {
       // I visning: hopp over pause/lunsj som ikke ligger mellom synlige timer
-      if (!editing && !breakTouchesNamedLesson(personData, day.key, slotIndex)) {
+      if (
+        !editing &&
+        !breakTouchesNamedLesson(personData, day.key, slotIndex)
+      ) {
         return;
       }
       list.appendChild(renderBreakRow(personKey, slot, slotIndex));
       return;
     }
 
-    const cellData = personData.grid?.[slot.id]?.[day.key] ?? null;
+    const hasSubject = Boolean(String(slot.subject || "").trim());
     // Vis ikke timer uten fagnavn (unntatt i redigering)
-    if (!editing && !(cellData && cellData.subject)) {
+    if (!editing && !hasSubject) {
       return;
     }
 
@@ -778,11 +900,11 @@ function renderSingleDay(personKey, personData) {
       remove.textContent = "×";
       remove.addEventListener("click", () => removeSlot(personKey, slotIndex));
       row.appendChild(
-        renderEditCell(personKey, slot, day.key, cellData, remove, row)
+        renderEditCell(personKey, slot, slotIndex, remove, row)
       );
     } else {
       row.appendChild(renderTimeCell(personKey, slot, slotIndex));
-      row.appendChild(renderViewCell(personData, cellData));
+      row.appendChild(renderViewCell(slot));
     }
     list.appendChild(row);
   });
@@ -821,13 +943,12 @@ function renderSingleDay(personKey, personData) {
 
 function hasNamedLesson(person, dayKey, slot) {
   if (!slot || slot.type !== "lesson") return false;
-  const cell = person.grid?.[slot.id]?.[dayKey];
-  return !!(cell && cell.subject);
+  return Boolean(String(slot.subject || "").trim());
 }
 
 /** Vis pause bare mellom navngitte timer — ikke først eller sist på dagen */
 function breakTouchesNamedLesson(person, dayKey, breakIndex) {
-  const slots = person.slots || [];
+  const slots = daySlots(person, dayKey);
   let before = false;
   let after = false;
   for (let i = breakIndex - 1; i >= 0; i--) {
@@ -845,9 +966,9 @@ function breakTouchesNamedLesson(person, dayKey, breakIndex) {
   return before && after;
 }
 
-function renumberLessons(personKey) {
+function renumberDayLessons(person, dayKey) {
   let n = 0;
-  for (const slot of draft[personKey].slots) {
+  for (const slot of daySlots(person, dayKey)) {
     if (slot.type === "lesson") {
       n += 1;
       slot.n = n;
@@ -855,45 +976,46 @@ function renumberLessons(personKey) {
   }
 }
 
+function renumberLessons(personKey, dayKey = activeDay) {
+  if (!draft?.[personKey]) return;
+  renumberDayLessons(draft[personKey], dayKey);
+}
+
 function removeSlot(personKey, slotIndex) {
   if (!draft) return;
   const person = draft[personKey];
-  const [removed] = person.slots.splice(slotIndex, 1);
-  if (removed?.id && person.grid) {
-    delete person.grid[removed.id];
-  }
-  renumberLessons(personKey);
+  const slots = daySlots(person, activeDay);
+  slots.splice(slotIndex, 1);
+  renumberLessons(personKey, activeDay);
   render();
 }
 
 function addLessonSlot(personKey) {
   if (!draft) return;
   const person = draft[personKey];
-  const lessonCount = person.slots.filter((s) => s.type === "lesson").length;
-  const id = `x${Date.now().toString(36)}`;
-  person.slots.push({
+  const slots = daySlots(person, activeDay);
+  const lessonCount = slots.filter((s) => s.type === "lesson").length;
+  const id = `x${Date.now().toString(36)}-${activeDay}`;
+  slots.push({
     id,
     n: lessonCount + 1,
     type: "lesson",
     start: EMPTY_TIME,
     end: EMPTY_TIME,
     label: `${formatTime(EMPTY_TIME)} - ${formatTime(EMPTY_TIME)}`,
+    subject: "",
+    color: "white",
+    room: "",
   });
-  person.grid[id] = {
-    man: null,
-    tir: null,
-    ons: null,
-    tor: null,
-    fre: null,
-  };
   render();
 }
 
 function addPauseSlot(personKey) {
   if (!draft) return;
   const person = draft[personKey];
-  const id = `p${Date.now().toString(36)}`;
-  person.slots.push({
+  const slots = daySlots(person, activeDay);
+  const id = `p${Date.now().toString(36)}-${activeDay}`;
+  slots.push({
     id,
     type: "pause",
     start: EMPTY_TIME,
@@ -935,10 +1057,10 @@ function renderBreakRow(personKey, slot, slotIndex) {
     name.setAttribute("aria-label", "Pausenavn");
     name.addEventListener("input", () => {
       const value = name.value.trim();
-      draft[personKey].slots[slotIndex].label = value || "Pause";
+      const slots = daySlots(draft[personKey], activeDay);
+      slots[slotIndex].label = value || "Pause";
       const lower = value.toLowerCase();
-      draft[personKey].slots[slotIndex].type =
-        lower === "lunsj" ? "lunsj" : "pause";
+      slots[slotIndex].type = lower === "lunsj" ? "lunsj" : "pause";
     });
 
     const remove = document.createElement("button");
@@ -984,13 +1106,13 @@ function renderTimeCell(personKey, slot, slotIndex) {
     start.value = formatTimeInputValue(normalizeTime(slot.start));
     start.setAttribute("aria-label", "Starttid");
     bindTimeInput(start, (value) => {
-      draft[personKey].slots[slotIndex].start = value;
+      daySlots(draft[personKey], activeDay)[slotIndex].start = value;
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
     start.addEventListener("blur", () => {
-      sortPersonSlots(draft[personKey]);
-      renumberLessons(personKey);
+      sortDaySlots(draft[personKey], activeDay);
+      renumberLessons(personKey, activeDay);
       render();
     });
     const end = document.createElement("input");
@@ -1002,13 +1124,13 @@ function renderTimeCell(personKey, slot, slotIndex) {
     end.value = formatTimeInputValue(normalizeTime(slot.end));
     end.setAttribute("aria-label", "Sluttid");
     bindTimeInput(end, (value) => {
-      draft[personKey].slots[slotIndex].end = value;
+      daySlots(draft[personKey], activeDay)[slotIndex].end = value;
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
     end.addEventListener("blur", () => {
-      sortPersonSlots(draft[personKey]);
-      renumberLessons(personKey);
+      sortDaySlots(draft[personKey], activeDay);
+      renumberLessons(personKey, activeDay);
       render();
     });
     time.append(start, end);
@@ -1019,28 +1141,29 @@ function renderTimeCell(personKey, slot, slotIndex) {
 }
 
 function syncSlotLabel(personKey, slotIndex) {
-  const slot = draft[personKey].slots[slotIndex];
+  const slot = daySlots(draft[personKey], activeDay)[slotIndex];
   // Pause/lunsj keep a name in label; only lesson rows sync label from times
-  if (slot.type !== "lesson") return;
+  if (!slot || slot.type !== "lesson") return;
   slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
 }
 
-function renderViewCell(personData, cellData) {
+function renderViewCell(slot) {
   const body = document.createElement("div");
   body.className = "lesson-body";
 
-  if (!cellData || !cellData.subject) {
+  const subject = String(slot?.subject || "").trim();
+  if (!subject) {
     body.classList.add("empty");
     body.textContent = "Ingen time";
     return body;
   }
 
-  const color = subjectColor(cellData.subject, cellData.color);
+  const color = subjectColor(subject, slot.color);
   body.classList.add(colorClass(color));
   const line = document.createElement("div");
   line.className = "subject-line";
-  line.appendChild(el("span", "subject", cellData.subject));
-  const room = String(cellData.room || "").trim();
+  line.appendChild(el("span", "subject", subject));
+  const room = String(slot.room || "").trim();
   if (room) {
     line.appendChild(el("span", "room", room));
   }
@@ -1053,27 +1176,17 @@ function applyEditCellColor(body, colorKey) {
   body.classList.add(colorClass(colorKey));
 }
 
-function renderEditCell(person, slot, dayKey, cellData, removeBtn, shell) {
+function renderEditCell(person, slot, slotIndex, removeBtn, shell) {
   const body = document.createElement("div");
   body.className = "lesson-body edit-cell";
   const colorShell = shell || body;
 
-  const ensure = () => {
-    if (!draft[person].grid[slot.id]) draft[person].grid[slot.id] = {};
-    if (!draft[person].grid[slot.id][dayKey]) {
-      draft[person].grid[slot.id][dayKey] = {
-        subject: "",
-        color: "white",
-        room: "",
-      };
-    }
-    return draft[person].grid[slot.id][dayKey];
-  };
+  const getSlot = () => daySlots(draft[person], activeDay)[slotIndex];
 
   const subject = document.createElement("input");
   subject.className = "subject-input";
   subject.placeholder = "Fag";
-  subject.value = cellData?.subject || "";
+  subject.value = slot?.subject || "";
 
   const color = document.createElement("select");
   color.className = "color-select";
@@ -1083,8 +1196,8 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn, shell) {
     opt.textContent = c.label;
     color.appendChild(opt);
   }
-  const initialSubject = cellData?.subject || "";
-  color.value = subjectColor(initialSubject, cellData?.color || "white");
+  const initialSubject = slot?.subject || "";
+  color.value = subjectColor(initialSubject, slot?.color || "white");
   applyEditCellColor(colorShell, color.value);
 
   const syncFieldColor = (colorKey) => {
@@ -1092,11 +1205,11 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn, shell) {
   };
 
   subject.addEventListener("input", () => {
-    const cell = ensure();
-    cell.subject = subject.value.trim();
-    if (cell.subject) {
-      const mapped = subjectColor(cell.subject, cell.color || "white");
-      cell.color = mapped;
+    const s = getSlot();
+    s.subject = subject.value.trim();
+    if (s.subject) {
+      const mapped = subjectColor(s.subject, s.color || "white");
+      s.color = mapped;
       color.value = mapped;
       syncFieldColor(mapped);
     }
@@ -1104,12 +1217,12 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn, shell) {
   });
 
   subject.addEventListener("change", () => {
-    const cell = ensure();
-    cell.subject = subject.value.trim();
-    if (cell.subject) {
-      const mapped = subjectColor(cell.subject, color.value);
-      cell.color = mapped;
-      applySubjectColor(cell.subject, mapped);
+    const s = getSlot();
+    s.subject = subject.value.trim();
+    if (s.subject) {
+      const mapped = subjectColor(s.subject, color.value);
+      s.color = mapped;
+      applySubjectColor(s.subject, mapped);
       color.value = mapped;
       syncFieldColor(mapped);
     }
@@ -1117,12 +1230,12 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn, shell) {
   });
 
   color.addEventListener("change", () => {
-    const cell = ensure();
-    cell.color = color.value;
+    const s = getSlot();
+    s.color = color.value;
     syncFieldColor(color.value);
-    const subj = (subject.value || cell.subject || "").trim();
+    const subj = (subject.value || s.subject || "").trim();
     if (subj) {
-      cell.subject = subj;
+      s.subject = subj;
       applySubjectColor(subj, color.value);
       document.querySelectorAll(".lesson.lesson-edit").forEach((rowEl) => {
         if (rowEl.classList.contains("break-lesson")) return;
@@ -1145,9 +1258,9 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn, shell) {
   const room = document.createElement("input");
   room.className = "room-input";
   room.placeholder = "Rom";
-  room.value = cellData?.room || "";
+  room.value = slot?.room || "";
   room.addEventListener("input", () => {
-    ensure().room = room.value;
+    getSlot().room = room.value;
   });
   controls.append(room);
 
@@ -1174,6 +1287,7 @@ function enterEdit() {
   draft.classes = classKeys(draft);
   for (const key of draft.classes) {
     delete draft[key].subjectColors;
+    migratePersonToDays(draft[key]);
   }
   ensureActivePerson(draft);
   editing = true;
@@ -1199,14 +1313,11 @@ function sanitize(data) {
   }
   if (keys.length > MAX_CLASSES) keys = keys.slice(0, MAX_CLASSES);
   out.classes = keys;
+  out.version = DATA_VERSION;
 
   for (const key of [...Object.keys(out)]) {
     if (keys.includes(key)) continue;
-    if (
-      isClassRecord(out[key]) &&
-      Array.isArray(out[key].slots) &&
-      out[key].grid
-    ) {
+    if (isClassSchedule(out[key])) {
       delete out[key];
     }
   }
@@ -1216,64 +1327,63 @@ function sanitize(data) {
     out[person].name = name;
     out[person].title = name;
     delete out[person].subjectColors;
+    migratePersonToDays(out[person]);
+    ensureDayBuckets(out[person]);
+    delete out[person].slots;
+    delete out[person].grid;
 
-    for (const slot of out[person].slots) {
-      slot.start = normalizeTime(slot.start);
-      slot.end = normalizeTime(slot.end);
-      if (slot.type === "lesson") {
-        slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
-      } else if (slot.type !== "lesson") {
-        const pauseName = String(slot.label || "").trim();
-        // Recover if an older sanitize overwrote pause names with times
-        if (
-          !pauseName ||
-          /^\d{1,2}[.:]\d{2}\s*[-–]\s*\d{1,2}[.:]\d{2}$/.test(pauseName)
-        ) {
-          slot.label = slot.type === "lunsj" ? "Lunsj" : "Pause";
-        } else {
-          slot.label = pauseName;
-        }
-      }
-      const row = out[person].grid[slot.id] || {};
-      for (const day of WEEKDAYS) {
-        const cell = row[day.key];
-        if (!cell) {
-          row[day.key] = null;
-          continue;
-        }
-        const subject = String(cell.subject || "").trim();
-        const room = String(cell.room || "").trim();
-        if (!subject && !room) {
-          row[day.key] = null;
-        } else {
-          let color = cell.color || "white";
+    for (const day of WEEKDAYS) {
+      const slots = out[person].days[day.key].slots;
+      for (const slot of slots) {
+        slot.start = normalizeTime(slot.start);
+        slot.end = normalizeTime(slot.end);
+        if (slot.type === "lesson") {
+          slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
+          const subject = String(slot.subject || "").trim();
+          const room = String(slot.room || "").trim();
+          slot.subject = subject;
+          if (room) slot.room = room;
+          else delete slot.room;
+          let color = slot.color || "white";
           if (subject && out.subjectColors[subject]) {
             color = out.subjectColors[subject];
           } else if (subject && color && color !== "white") {
             out.subjectColors[subject] = color;
           }
-          row[day.key] = { subject, color };
-          if (room) row[day.key].room = room;
+          slot.color = color;
+          delete slot.teacher;
+        } else {
+          const pauseName = String(slot.label || "").trim();
+          // Recover if an older sanitize overwrote pause names with times
+          if (
+            !pauseName ||
+            /^\d{1,2}[.:]\d{2}\s*[-–]\s*\d{1,2}[.:]\d{2}$/.test(pauseName)
+          ) {
+            slot.label = slot.type === "lunsj" ? "Lunsj" : "Pause";
+          } else {
+            slot.label = pauseName;
+          }
+          delete slot.subject;
+          delete slot.color;
+          delete slot.room;
+          delete slot.n;
+          delete slot.teacher;
         }
       }
-      out[person].grid[slot.id] = row;
-    }
-    sortPersonSlots(out[person]);
-    let lessonN = 0;
-    for (const slot of out[person].slots) {
-      if (slot.type === "lesson") {
-        lessonN += 1;
-        slot.n = lessonN;
-      }
+      out[person].days[day.key].slots = sortSlotsChronologically(slots);
+      renumberDayLessons(out[person], day.key);
     }
   }
 
   for (const person of keys) {
-    for (const slot of out[person].slots) {
-      for (const day of WEEKDAYS) {
-        const cell = out[person].grid[slot.id]?.[day.key];
-        if (cell?.subject && out.subjectColors[cell.subject]) {
-          cell.color = out.subjectColors[cell.subject];
+    for (const day of WEEKDAYS) {
+      for (const slot of daySlots(out[person], day.key)) {
+        if (
+          slot.type === "lesson" &&
+          slot.subject &&
+          out.subjectColors[slot.subject]
+        ) {
+          slot.color = out.subjectColors[slot.subject];
         }
       }
     }
