@@ -24,7 +24,7 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=35" />
+    <link rel="stylesheet" href="styles.css?v=36" />
   </head>
   <body>
     <div class="phone-shell">
@@ -36,21 +36,6 @@
 
       <main id="planer" class="main">
         <p class="status" id="status" role="status" aria-live="polite"></p>
-
-        <div class="file-tools" id="file-tools" hidden>
-          <button type="button" class="btn btn-ghost" id="btn-export">
-            Eksporter
-          </button>
-          <button type="button" class="btn btn-ghost" id="btn-import">
-            Importer
-          </button>
-          <input
-            type="file"
-            id="import-input"
-            accept="application/json,.json"
-            hidden
-          />
-        </div>
 
         <div class="name-edit" id="name-edit" hidden>
           <div class="name-edit-row">
@@ -99,10 +84,24 @@
               Lagre
             </button>
           </div>
+          <div class="file-tools" id="file-tools" hidden>
+            <button type="button" class="btn btn-ghost" id="btn-export">
+              Eksporter
+            </button>
+            <button type="button" class="btn btn-ghost" id="btn-import">
+              Importer
+            </button>
+            <input
+              type="file"
+              id="import-input"
+              accept="application/json,.json"
+              hidden
+            />
+          </div>
         </div>
       </main>
     </div>
 
-    <script src="app.js?v=35"></script>
+    <script src="app.js?v=36"></script>
   </body>
 </html>
