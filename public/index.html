@@ -34,6 +34,21 @@
           <input type="text" id="name-input" maxlength="60" />
         </label>
 
+        <div class="file-tools" id="file-tools" hidden>
+          <button type="button" class="btn btn-ghost" id="btn-export">
+            Eksporter
+          </button>
+          <button type="button" class="btn btn-ghost" id="btn-import">
+            Last inn
+          </button>
+          <input
+            type="file"
+            id="import-input"
+            accept="application/json,.json"
+            hidden
+          />
+        </div>
+
         <section class="schedule-section" aria-label="Ukeplan">
           <div id="schedule-root" class="day-stack"></div>
         </section>

@@ -521,6 +521,22 @@ body {
   flex: 1;
 }
 
+.file-tools {
+  display: flex;
+  gap: 0.55rem;
+  margin: 0 0 0.75rem;
+}
+
+.file-tools[hidden] {
+  display: none !important;
+}
+
+.file-tools .btn {
+  flex: 1;
+  min-height: 44px;
+  font-weight: 600;
+}
+
 .bg-red {
   background: var(--c-red);
   color: #fff;

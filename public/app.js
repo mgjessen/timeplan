@@ -23,18 +23,12 @@ const COLORS = [
 
 const COLOR_KEYS = COLORS.map((c) => c.key);
 
-/** Express locally; GitHub Contents API on GitHub Pages (LogPad-style static host). */
-const GH = {
-  owner: "mgjessen",
-  repo: "timeplan",
-  branch: "main",
-  path: "data/schedules.json",
-  tokenKey: "timeplan_gh_token",
-};
+/** localStorage on GitHub Pages (LogPad-style); Express API when `npm start`. */
+const STORAGE_KEY = "timeplan-schedules-v5";
+const DATA_VERSION = 5;
 
-/** @type {'api' | 'github' | null} */
+/** @type {'api' | 'local' | null} */
 let backend = null;
-let githubSha = null;
 
 const els = {
   status: document.getElementById("status"),
@@ -45,6 +39,10 @@ const els = {
   btnEdit: document.getElementById("btn-edit"),
   btnCancel: document.getElementById("btn-cancel"),
   btnSave: document.getElementById("btn-save"),
+  btnExport: document.getElementById("btn-export"),
+  btnImport: document.getElementById("btn-import"),
+  importInput: document.getElementById("import-input"),
+  fileTools: document.getElementById("file-tools"),
   scheduleRoot: document.getElementById("schedule-root"),
   nameEdit: document.getElementById("name-edit"),
   nameInput: document.getElementById("name-input"),
@@ -171,56 +169,55 @@ function applySubjectColor(subject, color) {
   }
 }
 
-function toBase64(text) {
-  const bytes = new TextEncoder().encode(text);
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin);
+function looksLikeSchedules(data) {
+  return Boolean(data && data.maja?.grid && data.ole?.grid && data.maja?.slots);
 }
 
-function fromBase64(b64) {
-  const bin = atob(b64);
-  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
+function normalizeLoaded(raw) {
+  if (!looksLikeSchedules(raw)) {
+    throw new Error("Ugyldig timeplan-fil");
+  }
+  const data = clone(raw);
+  data.version = DATA_VERSION;
+  if (!data.subjectColors || typeof data.subjectColors !== "object") {
+    data.subjectColors = {};
+  }
+  if (typeof data.schoolYear !== "string" || !data.schoolYear.trim()) {
+    data.schoolYear = "2026/2027";
+  }
+  for (const key of PEOPLE) {
+    if (data[key]?.subjectColors) delete data[key].subjectColors;
+  }
+  return data;
 }
 
-function githubHeaders(token) {
-  const headers = {
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-  };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
-}
-
-function getGithubToken() {
+function readLocal() {
   try {
-    return sessionStorage.getItem(GH.tokenKey) || "";
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return normalizeLoaded(JSON.parse(raw));
   } catch {
-    return "";
+    return null;
   }
 }
 
-function setGithubToken(token) {
-  try {
-    if (token) sessionStorage.setItem(GH.tokenKey, token);
-    else sessionStorage.removeItem(GH.tokenKey);
-  } catch {
-    /* ignore */
-  }
+function writeLocal(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  return data;
 }
 
-function ensureGithubToken() {
-  let token = getGithubToken();
-  if (token) return token;
-  token = window.prompt(
-    "GitHub PAT med Contents: Write på mgjessen/timeplan (lagres bare i denne nettleserøkten):",
-    ""
-  );
-  if (!token) return "";
-  token = token.trim();
-  setGithubToken(token);
-  return token;
+async function loadSeedDefaults() {
+  const paths = ["data/schedules.json", "data/seed.json"];
+  for (const path of paths) {
+    try {
+      const res = await fetch(`${path}?t=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) continue;
+      return normalizeLoaded(await res.json());
+    } catch {
+      /* try next */
+    }
+  }
+  throw new Error("Fant ikke standard timeplan (seed)");
 }
 
 async function detectBackend() {
@@ -236,50 +233,21 @@ async function detectBackend() {
   } catch {
     /* Pages / static host */
   }
-  backend = "github";
+  backend = "local";
   return backend;
 }
 
 async function loadFromApi() {
   const res = await fetch("/api/schedules", { cache: "no-store" });
   if (!res.ok) throw new Error("Kunne ikke hente timeplaner");
-  return res.json();
+  return normalizeLoaded(await res.json());
 }
 
-async function loadFromGithub() {
-  const url = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}?ref=${GH.branch}`;
-  const token = getGithubToken();
-  const res = await fetch(url, {
-    cache: "no-store",
-    headers: githubHeaders(token || undefined),
-  });
-  if (res.status === 404) {
-    githubSha = null;
-    const seedRes = await fetch(`data/seed.json?t=${Date.now()}`, {
-      cache: "no-store",
-    });
-    if (!seedRes.ok) throw new Error("Fant ikke seed-data");
-    return seedRes.json();
-  }
-  if (!res.ok) {
-    // Public raw fallback when API rate-limits anonymous reads
-    const raw = await fetch(
-      `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/${GH.branch}/${GH.path}?t=${Date.now()}`,
-      { cache: "no-store" }
-    );
-    if (!raw.ok) throw new Error("Kunne ikke hente timeplaner fra GitHub");
-    githubSha = null;
-    return raw.json();
-  }
-  const meta = await res.json();
-  githubSha = meta.sha || null;
-  if (meta.content) return JSON.parse(fromBase64(meta.content.replace(/\n/g, "")));
-  const raw = await fetch(
-    `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/${GH.branch}/${GH.path}?t=${Date.now()}`,
-    { cache: "no-store" }
-  );
-  if (!raw.ok) throw new Error("Kunne ikke hente timeplaner fra GitHub");
-  return raw.json();
+async function loadFromLocal() {
+  const stored = readLocal();
+  if (stored) return stored;
+  const seed = await loadSeedDefaults();
+  return writeLocal(seed);
 }
 
 async function saveToApi(payload) {
@@ -292,63 +260,63 @@ async function saveToApi(payload) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || "Lagring feilet");
   }
-  return res.json();
+  return normalizeLoaded(await res.json());
 }
 
-async function saveToGithub(payload) {
-  const token = ensureGithubToken();
-  if (!token) throw new Error("GitHub-token kreves for å lagre på Pages");
-
-  const url = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`;
-  // Refresh SHA to avoid conflicts
-  const head = await fetch(`${url}?ref=${GH.branch}`, {
-    cache: "no-store",
-    headers: githubHeaders(token),
-  });
-  if (head.ok) {
-    const meta = await head.json();
-    githubSha = meta.sha || null;
-  } else if (head.status === 404) {
-    githubSha = null;
-  } else {
-    throw new Error("Kunne ikke lese fil-SHA fra GitHub");
-  }
-
-  const body = {
-    message: "Oppdater timeplan",
-    content: toBase64(JSON.stringify(payload, null, 2) + "\n"),
-    branch: GH.branch,
-  };
-  if (githubSha) body.sha = githubSha;
-
-  const res = await fetch(url, {
-    method: "PUT",
-    headers: {
-      ...githubHeaders(token),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    if (res.status === 401 || res.status === 403) {
-      setGithubToken("");
-      throw new Error("GitHub-token ugyldig eller mangler tilgang — prøv igjen");
-    }
-    throw new Error(err.message || "Lagring til GitHub feilet");
-  }
-  const saved = await res.json();
-  githubSha = saved.content?.sha || githubSha;
-  return payload;
+async function saveToLocal(payload) {
+  return writeLocal(normalizeLoaded(payload));
 }
 
 async function loadSchedules() {
   setStatus("Henter timeplaner…");
   await detectBackend();
   schedules =
-    backend === "api" ? await loadFromApi() : await loadFromGithub();
+    backend === "api" ? await loadFromApi() : await loadFromLocal();
   setStatus("");
   render();
+}
+
+function exportSchedules() {
+  const data = sanitize(current() || schedules);
+  if (!data) {
+    setStatus("Ingenting å eksportere", "is-err");
+    return;
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2) + "\n"], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `timeplan-${stamp}.json`;
+  a.rel = "noopener";
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  setStatus("Eksportert JSON-fil.", "is-ok");
+}
+
+function importSchedulesFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || ""));
+      const next = normalizeLoaded(parsed);
+      if (!backend) await detectBackend();
+      schedules =
+        backend === "api" ? await saveToApi(next) : await saveToLocal(next);
+      draft = editing ? clone(schedules) : null;
+      setStatus("Konfigurasjon lastet inn.", "is-ok");
+      render();
+    } catch (err) {
+      setStatus(err.message || "Kunne ikke lese filen", "is-err");
+    }
+  };
+  reader.onerror = () => setStatus("Kunne ikke lese filen", "is-err");
+  reader.readAsText(file);
 }
 
 function setActivePerson(person) {
@@ -381,8 +349,11 @@ function render() {
   document.body.classList.toggle("is-editing", editing);
   els.viewActions.hidden = editing;
   els.editActions.hidden = !editing;
+  if (els.fileTools) els.fileTools.hidden = !editing;
   els.btnSave.disabled = saving;
   els.btnCancel.disabled = saving;
+  if (els.btnExport) els.btnExport.disabled = saving;
+  if (els.btnImport) els.btnImport.disabled = saving;
 }
 
 function renderPersonTabs(data) {
@@ -881,11 +852,11 @@ async function saveEdit() {
     schedules =
       backend === "api"
         ? await saveToApi(payload)
-        : await saveToGithub(payload);
+        : await saveToLocal(payload);
     draft = null;
     editing = false;
     setStatus(
-      backend === "api" ? "Lagret på serveren." : "Lagret i GitHub.",
+      backend === "api" ? "Lagret på serveren." : "Lagret i nettleseren.",
       "is-ok"
     );
   } catch (err) {
@@ -907,6 +878,13 @@ els.nameInput.addEventListener("input", () => {
 els.btnEdit.addEventListener("click", enterEdit);
 els.btnCancel.addEventListener("click", cancelEdit);
 els.btnSave.addEventListener("click", saveEdit);
+els.btnExport?.addEventListener("click", exportSchedules);
+els.btnImport?.addEventListener("click", () => els.importInput?.click());
+els.importInput?.addEventListener("change", () => {
+  const file = els.importInput.files?.[0];
+  els.importInput.value = "";
+  if (file) importSchedulesFile(file);
+});
 
 loadSchedules().catch((err) => {
   setStatus(err.message || "Noe gikk galt", "is-err");
