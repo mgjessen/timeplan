@@ -65,7 +65,7 @@ body {
   /* Match .day-card inner inset so class chips align with time/subject boxes */
   --content-inset: 0.85rem;
   --geese-icon: 1.85rem;
-  --geese-gap: 0.06rem; /* half of previous 0.12rem */
+  --geese-gap: 0.02rem; /* 1/3 of previous 0.06rem */
   --geese-label: 0.55rem;
   --geese-stack: calc(var(--geese-icon) + var(--geese-gap) + var(--geese-label));
   flex: 0 0 auto;
