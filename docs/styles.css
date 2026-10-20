@@ -383,15 +383,18 @@ body {
 .time-input {
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0.3rem 0.2rem;
+  border-radius: 10px;
+  padding: 0.35rem 0.2rem;
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
   text-align: center;
   background: #fff;
-  min-height: 32px;
+  /* Match Fag / edit-control height in Rediger */
+  height: 38px;
+  min-height: 38px;
 }
 
 .lesson-body {

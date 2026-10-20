@@ -120,6 +120,30 @@ function formatTime(t) {
   return String(t || "").replace(":", ".");
 }
 
+/** Digits-only phone entry → TT:MM (e.g. 0815 → 08:15). Max 4 digits. */
+function formatTimeInputValue(raw) {
+  const digits = String(raw || "").replace(/\D/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
+function bindTimeInput(input, onChange) {
+  input.addEventListener("input", () => {
+    const formatted = formatTimeInputValue(input.value);
+    if (input.value !== formatted) {
+      input.value = formatted;
+      // Keep caret at end while typing TTMM on phone
+      try {
+        const n = formatted.length;
+        input.setSelectionRange(n, n);
+      } catch {
+        /* ignore */
+      }
+    }
+    onChange(formatted);
+  });
+}
+
 function slotDisplayLabel(slot) {
   if (slot.start && slot.end) {
     return `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
@@ -718,24 +742,26 @@ function renderTimeCell(personKey, slot, slotIndex, opts = {}) {
     const start = document.createElement("input");
     start.type = "text";
     start.inputMode = "numeric";
+    start.autocomplete = "off";
     start.className = "time-input";
     start.placeholder = "08:15";
-    start.value = slot.start || "";
+    start.value = formatTimeInputValue(slot.start || "");
     start.setAttribute("aria-label", "Starttid");
-    start.addEventListener("input", () => {
-      draft[personKey].slots[slotIndex].start = start.value;
+    bindTimeInput(start, (value) => {
+      draft[personKey].slots[slotIndex].start = value;
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
     const end = document.createElement("input");
     end.type = "text";
     end.inputMode = "numeric";
+    end.autocomplete = "off";
     end.className = "time-input";
     end.placeholder = "09:15";
-    end.value = slot.end || "";
+    end.value = formatTimeInputValue(slot.end || "");
     end.setAttribute("aria-label", "Sluttid");
-    end.addEventListener("input", () => {
-      draft[personKey].slots[slotIndex].end = end.value;
+    bindTimeInput(end, (value) => {
+      draft[personKey].slots[slotIndex].end = value;
       syncSlotLabel(personKey, slotIndex);
       renderDayTabs(draft[personKey]);
     });
