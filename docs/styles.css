@@ -211,10 +211,22 @@ body {
 .name-edit {
   --edit-control-h: 38px;
   margin-bottom: 0.75rem;
+  background: var(--mint);
+  border: 1px solid rgba(15, 61, 52, 0.1);
+  border-radius: var(--radius);
+  padding: 0.4rem;
+  box-shadow: var(--shadow);
 }
 
 .name-edit[hidden] {
   display: none !important;
+}
+
+.name-edit-shell {
+  border-radius: 14px;
+  padding: 0.4rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.55);
 }
 
 .name-edit-row {
@@ -753,7 +765,7 @@ body {
 .file-tools {
   display: flex;
   gap: 0.55rem;
-  margin: 0 0 0.55rem;
+  margin: 0 0 0.45rem;
 }
 
 .file-tools[hidden] {
