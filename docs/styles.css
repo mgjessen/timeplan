@@ -222,13 +222,6 @@ body {
   display: none !important;
 }
 
-.name-edit-shell {
-  border-radius: 14px;
-  padding: 0.4rem;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  background: rgba(255, 255, 255, 0.55);
-}
-
 .name-edit-row {
   display: grid;
   grid-template-columns:
