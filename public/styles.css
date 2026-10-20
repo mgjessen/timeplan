@@ -5,7 +5,8 @@
   --sea: #2f6f5e;
   --line: rgba(26, 46, 40, 0.14);
   --panel: rgba(255, 255, 255, 0.72);
-  --shadow: 0 12px 32px rgba(15, 61, 52, 0.1);
+  --mint: #e7f5ec;
+  --shadow: 0 12px 32px rgba(15, 61, 52, 0.08);
   --radius: 18px;
   --font-display: "Bricolage Grotesque", Georgia, serif;
   --font-body: "Figtree", "Segoe UI", sans-serif;
