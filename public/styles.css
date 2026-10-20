@@ -368,15 +368,16 @@ body {
 
 .time-input {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 0.35rem 0.3rem;
+  padding: 0.3rem 0.2rem;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-variant-numeric: tabular-nums;
   text-align: center;
   background: #fff;
-  min-height: 34px;
+  min-height: 32px;
 }
 
 .lesson-body {
@@ -388,6 +389,7 @@ body {
   justify-content: center;
   gap: 0.15rem;
   min-height: 3.25rem;
+  min-width: 0;
 }
 
 .lesson-body .subject {
