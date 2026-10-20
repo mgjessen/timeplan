@@ -128,7 +128,7 @@ body {
 
 .person-tabs {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.3rem;
   padding: 0;
   margin-bottom: 0.55rem;
@@ -137,7 +137,7 @@ body {
 }
 
 .person-tabs[data-count="1"] {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .person-tabs[data-count="3"] .tab .tab-class,
@@ -157,12 +157,15 @@ body {
   background: var(--mint);
   border-radius: 14px;
   min-height: 48px;
+  min-width: 0;
+  max-width: 100%;
   padding: 0.4rem 0.45rem;
   font: inherit;
   font-weight: 700;
   color: var(--ink-soft);
   cursor: pointer;
   touch-action: manipulation;
+  overflow: hidden;
 }
 
 .tab .tab-school {
@@ -266,10 +269,14 @@ body {
 .day-tab .d,
 .day-tab .t,
 .lesson-body .subject,
+.lesson-body .room,
+.lesson-time .lbl,
 .break-body,
 .app-title,
 .status,
-.day-card-head h3 {
+.day-card-head h3,
+.add-lesson,
+.btn {
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
@@ -287,14 +294,19 @@ body {
 .lesson-body.edit-cell input,
 .lesson-body.edit-cell select,
 .name-edit input,
-.time-input {
+.time-input,
+.subject-input,
+.room-input,
+.pause-name-input {
   overflow-x: auto;
+  overflow-y: hidden;
   text-overflow: clip;
+  white-space: nowrap;
 }
 
 .day-tabs {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.3rem;
   margin: 0;
   padding: 0;
@@ -314,6 +326,9 @@ body {
   cursor: pointer;
   font: inherit;
   min-height: 64px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   touch-action: manipulation;
 }
 
@@ -323,6 +338,8 @@ body {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--sea);
+  width: 100%;
+  text-align: center;
 }
 
 .day-tab .t {
@@ -331,6 +348,8 @@ body {
   font-size: 0.72rem;
   color: var(--pine);
   line-height: 1.15;
+  width: 100%;
+  text-align: center;
 }
 
 .day-tab .t.start {
@@ -431,12 +450,15 @@ body {
 }
 
 .lesson-time .lbl {
+  display: block;
   font-size: 0.68rem;
   line-height: 1.15;
   color: var(--ink-soft);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .time-input {
@@ -484,7 +506,9 @@ body {
 }
 
 .lesson-body .room {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  max-width: 45%;
+  min-width: 0;
   margin-left: auto;
   font-size: 0.76rem;
   font-weight: 700;
@@ -670,7 +694,7 @@ body {
 }
 
 .edit-row-controls .color-select {
-  text-overflow: ellipsis;
+  text-overflow: clip;
 }
 
 .remove-slot {
