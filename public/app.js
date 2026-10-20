@@ -806,7 +806,10 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
 
   const main = document.createElement("div");
   main.className = "edit-row-main";
-  main.append(subject);
+  if (person === "ole") main.classList.add("has-room");
+
+  const controls = document.createElement("div");
+  controls.className = "edit-row-controls";
 
   if (person === "ole") {
     const room = document.createElement("input");
@@ -816,12 +819,13 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn) {
     room.addEventListener("input", () => {
       ensure().room = room.value;
     });
-    main.classList.add("has-room");
-    main.append(room);
+    controls.append(room);
   }
 
-  main.append(color);
-  if (removeBtn) main.append(removeBtn);
+  controls.append(color);
+  if (removeBtn) controls.append(removeBtn);
+
+  main.append(subject, controls);
   body.append(main);
 
   return body;
