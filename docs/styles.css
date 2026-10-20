@@ -128,12 +128,27 @@ body {
 
 .person-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.3rem;
   padding: 0;
   margin-bottom: 0.55rem;
   background: transparent;
   border: none;
+}
+
+.person-tabs[data-count="1"] {
+  grid-template-columns: 1fr;
+}
+
+.person-tabs[data-count="3"],
+.person-tabs[data-count="4"] .tab .tab-class {
+  font-size: 0.85rem;
+}
+
+.person-tabs[data-count="3"] .tab,
+.person-tabs[data-count="4"] .tab {
+  min-height: 44px;
+  padding: 0.35rem 0.3rem;
 }
 
 .tab {
@@ -217,6 +232,28 @@ body {
   font-weight: 700;
   background: rgba(255, 255, 255, 0.95);
   min-height: 46px;
+}
+
+.class-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin: 0 0 0.75rem;
+}
+
+.class-tools[hidden] {
+  display: none !important;
+}
+
+.class-tools .btn {
+  min-height: 44px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.class-tools .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .day-tabs {
@@ -633,7 +670,7 @@ body {
   /* In document flow under the timetable — scroll to reach Rediger */
   position: relative;
   width: 100%;
-  margin-top: 0.85rem;
+  margin-top: 1.7rem; /* ~2× previous gap above Rediger */
   padding: 0.15rem 0 0.35rem;
   background: transparent;
 }

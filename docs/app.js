@@ -6,7 +6,10 @@ const WEEKDAYS = [
   { key: "fre", label: "Fredag", short: "Fre" },
 ];
 
-const PEOPLE = ["ole", "maja"];
+const MIN_CLASSES = 1;
+const MAX_CLASSES = 4;
+/** Legacy fixed keys still accepted on import */
+const LEGACY_CLASS_KEYS = ["maja", "ole"];
 
 const COLORS = [
   { key: "red", label: "Rød" },
@@ -24,9 +27,9 @@ const COLORS = [
 const COLOR_KEYS = COLORS.map((c) => c.key);
 
 /** localStorage on GitHub Pages (LogPad-style); Express API when `npm start`. */
-const STORAGE_KEY = "timeplan-schedules-v6";
-const LEGACY_STORAGE_KEYS = ["timeplan-schedules-v5"];
-const DATA_VERSION = 6;
+const STORAGE_KEY = "timeplan-schedules-v7";
+const LEGACY_STORAGE_KEYS = ["timeplan-schedules-v6", "timeplan-schedules-v5"];
+const DATA_VERSION = 7;
 
 /** @type {'api' | 'local' | null} */
 let backend = null;
@@ -47,14 +50,60 @@ const els = {
   scheduleRoot: document.getElementById("schedule-root"),
   nameEdit: document.getElementById("name-edit"),
   nameInput: document.getElementById("name-input"),
+  classTools: document.getElementById("class-tools"),
+  btnAddClass: document.getElementById("btn-add-class"),
+  btnRemoveClass: document.getElementById("btn-remove-class"),
 };
 
 let schedules = null;
 let draft = null;
 let editing = false;
 let saving = false;
-let activePerson = "ole";
+let activePerson = "c1";
 let activeDay = defaultDayKey();
+
+function isClassRecord(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+/** Ordered class keys for a schedule payload (1–4). */
+function classKeys(data) {
+  if (!data || typeof data !== "object") return [];
+  let keys = [];
+  if (Array.isArray(data.classes)) {
+    keys = data.classes.filter(
+      (k) => typeof k === "string" && isClassRecord(data[k])
+    );
+  }
+  if (!keys.length) {
+    keys = LEGACY_CLASS_KEYS.filter((k) => isClassRecord(data[k]));
+  }
+  if (!keys.length) {
+    keys = Object.keys(data).filter(
+      (k) =>
+        isClassRecord(data[k]) &&
+        Array.isArray(data[k].slots) &&
+        data[k].grid &&
+        typeof data[k].grid === "object"
+    );
+  }
+  return keys.slice(0, MAX_CLASSES);
+}
+
+function ensureActivePerson(data) {
+  const keys = classKeys(data);
+  if (!keys.length) return;
+  if (!keys.includes(activePerson)) activePerson = keys[0];
+}
+
+function blankClass(name) {
+  return {
+    name,
+    title: name,
+    slots: [],
+    grid: {},
+  };
+}
 
 function defaultDayKey(now = new Date()) {
   let jsDay = now.getDay();
@@ -181,7 +230,7 @@ function applySubjectColor(subject, color) {
   if (!draft || !subject) return;
   if (!draft.subjectColors) draft.subjectColors = {};
   draft.subjectColors[subject] = color;
-  for (const personKey of PEOPLE) {
+  for (const personKey of classKeys(draft)) {
     const person = draft[personKey];
     for (const slot of person.slots || []) {
       const row = person.grid?.[slot.id];
@@ -195,14 +244,14 @@ function applySubjectColor(subject, color) {
 }
 
 function looksLikeSchedules(data) {
-  return Boolean(
-    data &&
-      data.maja &&
-      data.ole &&
-      Array.isArray(data.maja.slots) &&
-      Array.isArray(data.ole.slots) &&
-      data.maja.grid &&
-      data.ole.grid
+  if (!data || typeof data !== "object") return false;
+  const keys = classKeys(data);
+  if (keys.length < MIN_CLASSES) return false;
+  return keys.every(
+    (k) =>
+      Array.isArray(data[k].slots) &&
+      data[k].grid &&
+      typeof data[k].grid === "object"
   );
 }
 
@@ -211,14 +260,15 @@ function emptySchedules() {
     version: DATA_VERSION,
     schoolYear: "",
     subjectColors: {},
-    maja: { name: "Klasse 1", title: "Klasse 1", slots: [], grid: {} },
-    ole: { name: "Klasse 2", title: "Klasse 2", slots: [], grid: {} },
+    classes: ["c1", "c2"],
+    c1: blankClass("Klasse 1"),
+    c2: blankClass("Klasse 2"),
   };
 }
 
 function isScheduleEmpty(data) {
   if (!data) return true;
-  for (const key of PEOPLE) {
+  for (const key of classKeys(data)) {
     for (const slot of data[key]?.slots || []) {
       if (slot.type !== "lesson") continue;
       const row = data[key].grid?.[slot.id];
@@ -232,7 +282,7 @@ function isScheduleEmpty(data) {
 }
 
 function stripTeachersFromData(data) {
-  for (const key of PEOPLE) {
+  for (const key of classKeys(data)) {
     const person = data[key];
     if (!person?.grid) continue;
     for (const row of Object.values(person.grid)) {
@@ -259,17 +309,34 @@ function normalizeLoaded(raw) {
   if (typeof data.schoolYear !== "string") {
     data.schoolYear = "";
   }
-  for (const key of PEOPLE) {
+
+  let keys = classKeys(data);
+  if (!keys.length) throw new Error("Ugyldig timeplan-fil");
+  if (keys.length > MAX_CLASSES) keys = keys.slice(0, MAX_CLASSES);
+  data.classes = keys;
+
+  for (const key of [...Object.keys(data)]) {
+    if (keys.includes(key)) continue;
+    if (
+      isClassRecord(data[key]) &&
+      Array.isArray(data[key].slots) &&
+      data[key].grid
+    ) {
+      delete data[key];
+    }
+  }
+
+  keys.forEach((key, i) => {
     if (!data[key].grid || typeof data[key].grid !== "object") {
       data[key].grid = {};
     }
     if (!Array.isArray(data[key].slots)) data[key].slots = [];
     if (data[key]?.subjectColors) delete data[key].subjectColors;
     if (typeof data[key].name !== "string" || !data[key].name.trim()) {
-      data[key].name = key === "ole" ? "Klasse 2" : "Klasse 1";
+      data[key].name = `Klasse ${i + 1}`;
     }
     data[key].title = data[key].name;
-  }
+  });
   stripTeachersFromData(data);
   return data;
 }
@@ -357,6 +424,7 @@ async function loadSchedules() {
   await detectBackend();
   schedules =
     backend === "api" ? await loadFromApi() : await loadFromLocal();
+  ensureActivePerson(schedules);
   setStatus("");
   render();
 }
@@ -393,7 +461,12 @@ function importSchedulesFile(file) {
       if (!backend) await detectBackend();
       schedules =
         backend === "api" ? await saveToApi(next) : await saveToLocal(next);
+      ensureActivePerson(schedules);
       draft = editing ? clone(schedules) : null;
+      if (draft) {
+        draft.classes = classKeys(draft);
+        ensureActivePerson(draft);
+      }
       setStatus("Konfigurasjon lastet inn.", "is-ok");
       render();
     } catch (err) {
@@ -405,8 +478,42 @@ function importSchedulesFile(file) {
 }
 
 function setActivePerson(person) {
-  if (!PEOPLE.includes(person)) return;
+  const data = current();
+  if (!data || !classKeys(data).includes(person)) return;
   activePerson = person;
+  render();
+}
+
+function addClass() {
+  if (!draft || !editing) return;
+  const keys = classKeys(draft);
+  if (keys.length >= MAX_CLASSES) {
+    setStatus(`Maks ${MAX_CLASSES} klasser.`, "is-err");
+    return;
+  }
+  const id = `c${Date.now().toString(36)}`;
+  const name = `Klasse ${keys.length + 1}`;
+  draft.classes = [...keys, id];
+  draft[id] = blankClass(name);
+  activePerson = id;
+  setStatus(`La til ${name}.`, "is-ok");
+  render();
+}
+
+function removeActiveClass() {
+  if (!draft || !editing) return;
+  const keys = classKeys(draft);
+  if (keys.length <= MIN_CLASSES) {
+    setStatus("Minst én klasse må være igjen.", "is-err");
+    return;
+  }
+  if (!keys.includes(activePerson)) return;
+  const removed = displayName(draft[activePerson]) || "Klassen";
+  const nextKeys = keys.filter((k) => k !== activePerson);
+  delete draft[activePerson];
+  draft.classes = nextKeys;
+  activePerson = nextKeys[0];
+  setStatus(`Fjernet ${removed}.`, "is-ok");
   render();
 }
 
@@ -472,14 +579,35 @@ function initDaySwipe() {
 function render() {
   const data = current();
   if (!data) return;
+  ensureActivePerson(data);
 
   const person = data[activePerson];
+  if (!person) return;
   const name = displayName(person);
+  const keys = classKeys(data);
 
   renderPersonTabs(data);
 
   els.nameEdit.hidden = !editing;
   if (editing) els.nameInput.value = name;
+
+  if (els.classTools) {
+    els.classTools.hidden = !editing;
+    if (els.btnAddClass) {
+      els.btnAddClass.disabled = saving || keys.length >= MAX_CLASSES;
+      els.btnAddClass.setAttribute(
+        "aria-disabled",
+        String(keys.length >= MAX_CLASSES)
+      );
+    }
+    if (els.btnRemoveClass) {
+      els.btnRemoveClass.disabled = saving || keys.length <= MIN_CLASSES;
+      els.btnRemoveClass.setAttribute(
+        "aria-disabled",
+        String(keys.length <= MIN_CLASSES)
+      );
+    }
+  }
 
   renderDayTabs(person);
   renderSingleDay(activePerson, person);
@@ -500,8 +628,11 @@ function render() {
 function renderPersonTabs(data) {
   const root = els.personTabs;
   root.innerHTML = "";
+  const keys = classKeys(data);
+  root.style.gridTemplateColumns = `repeat(${Math.max(keys.length, 1)}, 1fr)`;
+  root.dataset.count = String(keys.length);
 
-  for (const key of PEOPLE) {
+  for (const key of keys) {
     const person = data[key];
     const name = displayName(person);
     const parts = splitTabLabel(name);
@@ -937,22 +1068,19 @@ function renderEditCell(person, slot, dayKey, cellData, removeBtn, shell) {
   });
 
   const main = document.createElement("div");
-  main.className = "edit-row-main";
-  if (person === "ole") main.classList.add("has-room");
+  main.className = "edit-row-main has-room";
 
   const controls = document.createElement("div");
   controls.className = "edit-row-controls";
 
-  if (person === "ole") {
-    const room = document.createElement("input");
-    room.className = "room-input";
-    room.placeholder = "Rom";
-    room.value = cellData?.room || "";
-    room.addEventListener("input", () => {
-      ensure().room = room.value;
-    });
-    controls.append(room);
-  }
+  const room = document.createElement("input");
+  room.className = "room-input";
+  room.placeholder = "Rom";
+  room.value = cellData?.room || "";
+  room.addEventListener("input", () => {
+    ensure().room = room.value;
+  });
+  controls.append(room);
 
   controls.append(color);
   if (removeBtn) controls.append(removeBtn);
@@ -974,9 +1102,11 @@ function enterEdit() {
   if (!schedules) return;
   draft = clone(schedules);
   if (!draft.subjectColors) draft.subjectColors = {};
-  for (const key of PEOPLE) {
+  draft.classes = classKeys(draft);
+  for (const key of draft.classes) {
     delete draft[key].subjectColors;
   }
+  ensureActivePerson(draft);
   editing = true;
   setStatus("Redigeringsmodus — husk å lagre.");
   render();
@@ -992,8 +1122,27 @@ function cancelEdit() {
 function sanitize(data) {
   const out = clone(data);
   if (!out.subjectColors) out.subjectColors = {};
+  let keys = classKeys(out);
+  if (keys.length < MIN_CLASSES) {
+    out.classes = ["c1"];
+    out.c1 = out.c1 || blankClass("Klasse 1");
+    keys = ["c1"];
+  }
+  if (keys.length > MAX_CLASSES) keys = keys.slice(0, MAX_CLASSES);
+  out.classes = keys;
 
-  for (const person of PEOPLE) {
+  for (const key of [...Object.keys(out)]) {
+    if (keys.includes(key)) continue;
+    if (
+      isClassRecord(out[key]) &&
+      Array.isArray(out[key].slots) &&
+      out[key].grid
+    ) {
+      delete out[key];
+    }
+  }
+
+  for (const person of keys) {
     const name = String(out[person].name || "").trim() || out[person].title;
     out[person].name = name;
     out[person].title = name;
@@ -1005,12 +1154,15 @@ function sanitize(data) {
       if (slot.type === "lesson" && slot.start && slot.end) {
         slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
       } else if (slot.type !== "lesson") {
-        const name = String(slot.label || "").trim();
+        const pauseName = String(slot.label || "").trim();
         // Recover if an older sanitize overwrote pause names with times
-        if (!name || /^\d{1,2}[.:]\d{2}\s*[-–]\s*\d{1,2}[.:]\d{2}$/.test(name)) {
+        if (
+          !pauseName ||
+          /^\d{1,2}[.:]\d{2}\s*[-–]\s*\d{1,2}[.:]\d{2}$/.test(pauseName)
+        ) {
           slot.label = slot.type === "lunsj" ? "Lunsj" : "Pause";
         } else {
-          slot.label = name;
+          slot.label = pauseName;
         }
       }
       const row = out[person].grid[slot.id] || {};
@@ -1039,8 +1191,7 @@ function sanitize(data) {
     }
   }
 
-  // Final sync across both classes
-  for (const person of PEOPLE) {
+  for (const person of keys) {
     for (const slot of out[person].slots) {
       for (const day of WEEKDAYS) {
         const cell = out[person].grid[slot.id]?.[day.key];
@@ -1101,6 +1252,8 @@ els.importInput?.addEventListener("change", () => {
   els.importInput.value = "";
   if (file) importSchedulesFile(file);
 });
+els.btnAddClass?.addEventListener("click", addClass);
+els.btnRemoveClass?.addEventListener("click", removeActiveClass);
 
 initDaySwipe();
 
