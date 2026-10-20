@@ -180,11 +180,11 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.3rem;
-  padding: 0 var(--content-inset);
+  /* Full chrome width — same outer edges as .day-tabs (Man–Fre) */
+  padding: 0;
   margin-bottom: 0.55rem;
   background: transparent;
   border: none;
-  box-sizing: border-box;
 }
 
 .person-tabs[data-count="1"] {
