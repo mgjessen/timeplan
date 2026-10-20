@@ -752,7 +752,7 @@ body {
 .file-tools {
   display: flex;
   gap: 0.55rem;
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.55rem;
 }
 
 .file-tools[hidden] {
