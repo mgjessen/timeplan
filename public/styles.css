@@ -117,8 +117,6 @@ body {
   justify-content: flex-start;
   gap: var(--geese-gap);
   width: 2.5rem;
-  position: relative;
-  top: -5px;
   pointer-events: none;
   user-select: none;
 }
