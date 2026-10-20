@@ -351,6 +351,23 @@ body {
   gap: 0.4rem;
 }
 
+.add-lesson {
+  appearance: none;
+  border: 1px dashed var(--line);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 12px;
+  min-height: 44px;
+  margin-top: 0.25rem;
+  font: inherit;
+  font-weight: 700;
+  color: var(--sea);
+  cursor: pointer;
+}
+
+.add-lesson:active {
+  transform: scale(0.99);
+}
+
 .lesson {
   display: grid;
   grid-template-columns: 5.4rem 1fr;

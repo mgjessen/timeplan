@@ -246,11 +246,20 @@ function renderSingleDay(personKey, personData) {
 
   (personData.slots || []).forEach((slot, slotIndex) => {
     if (slot.type !== "lesson") {
+      // I visning: hopp over pause/lunsj som ikke ligger mellom synlige timer
+      if (!editing && !breakTouchesNamedLesson(personData, day.key, slotIndex)) {
+        return;
+      }
       list.appendChild(renderBreakRow(personKey, slot, slotIndex));
       return;
     }
 
     const cellData = personData.grid?.[slot.id]?.[day.key] ?? null;
+    // Vis ikke timer uten fagnavn (unntatt i redigering)
+    if (!editing && !(cellData && cellData.subject)) {
+      return;
+    }
+
     const row = document.createElement("div");
     row.className = "lesson";
 
@@ -264,8 +273,66 @@ function renderSingleDay(personKey, personData) {
     list.appendChild(row);
   });
 
+  if (editing) {
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "add-lesson";
+    add.textContent = "+ Legg til time";
+    add.addEventListener("click", () => addLessonSlot(personKey));
+    list.appendChild(add);
+  }
+
   card.appendChild(list);
   root.appendChild(card);
+}
+
+function hasNamedLesson(person, dayKey, slot) {
+  if (!slot || slot.type !== "lesson") return false;
+  const cell = person.grid?.[slot.id]?.[dayKey];
+  return !!(cell && cell.subject);
+}
+
+/** Vis pause bare hvis det finnes en navngitt time før og/eller etter */
+function breakTouchesNamedLesson(person, dayKey, breakIndex) {
+  const slots = person.slots || [];
+  let before = false;
+  let after = false;
+  for (let i = breakIndex - 1; i >= 0; i--) {
+    if (slots[i].type === "lesson") {
+      before = hasNamedLesson(person, dayKey, slots[i]);
+      break;
+    }
+  }
+  for (let i = breakIndex + 1; i < slots.length; i++) {
+    if (slots[i].type === "lesson") {
+      after = hasNamedLesson(person, dayKey, slots[i]);
+      break;
+    }
+  }
+  return before || after;
+}
+
+function addLessonSlot(personKey) {
+  if (!draft) return;
+  const person = draft[personKey];
+  const lessonCount = person.slots.filter((s) => s.type === "lesson").length;
+  const id = `x${Date.now().toString(36)}`;
+  person.slots.push({
+    id,
+    n: lessonCount + 1,
+    type: "lesson",
+    start: "",
+    end: "",
+    label: "",
+  });
+  person.grid[id] = {
+    man: null,
+    tir: null,
+    ons: null,
+    tor: null,
+    fre: null,
+  };
+  render();
 }
 
 function renderBreakRow(personKey, slot, slotIndex) {
