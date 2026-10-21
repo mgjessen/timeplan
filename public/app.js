@@ -21,10 +21,35 @@ const COLORS = [
   { key: "pink", label: "Rosa" },
   { key: "brown", label: "Brun" },
   { key: "grey", label: "Grå" },
-  { key: "white", label: "Hvit" },
+  { key: "turquoise", label: "Turkis" },
 ];
 
 const COLOR_KEYS = COLORS.map((c) => c.key);
+
+/** Map legacy «white» (and unknown keys) to turquoise. */
+function migrateColorKey(color) {
+  const key = String(color || "").trim();
+  if (!key || key === "white") return "turquoise";
+  return COLOR_KEYS.includes(key) ? key : "turquoise";
+}
+
+function migrateSubjectColorsMap(map) {
+  if (!map || typeof map !== "object") return;
+  for (const subject of Object.keys(map)) {
+    map[subject] = migrateColorKey(map[subject]);
+  }
+}
+
+function migratePersonColors(person) {
+  if (!person) return;
+  ensureDayBuckets(person);
+  for (const day of WEEKDAYS) {
+    for (const slot of person.days[day.key].slots || []) {
+      if (slot.type === "lesson") slot.color = migrateColorKey(slot.color);
+    }
+  }
+}
+
 
 /** localStorage on GitHub Pages (LogPad-style); Express API when `npm start`. */
 const STORAGE_KEY = "timeplan-schedules-v8";
@@ -156,7 +181,7 @@ function migratePersonToDays(person) {
         end: slot.end,
         label: slot.label,
         subject: cell?.subject ? String(cell.subject) : "",
-        color: cell?.color || "white",
+        color: migrateColorKey(cell?.color),
         room: cell?.room ? String(cell.room) : "",
       });
     }
@@ -278,8 +303,7 @@ function clone(data) {
 }
 
 function colorClass(color) {
-  const key = COLOR_KEYS.includes(color) ? color : "white";
-  return `bg-${key}`;
+  return `bg-${migrateColorKey(color)}`;
 }
 
 function current() {
@@ -432,11 +456,11 @@ function colorMap(data = current()) {
   return (data && data.subjectColors) || {};
 }
 
-function subjectColor(subject, fallback = "white") {
-  if (!subject) return fallback;
+function subjectColor(subject, fallback = "turquoise") {
+  if (!subject) return migrateColorKey(fallback);
   const map = colorMap();
-  if (map[subject]) return map[subject];
-  return COLOR_KEYS.includes(fallback) ? fallback : "white";
+  if (map[subject]) return migrateColorKey(map[subject]);
+  return migrateColorKey(fallback);
 }
 
 /** Apply color to a subject in ALL classes / days */
@@ -533,6 +557,7 @@ function normalizeLoaded(raw) {
   if (!data.subjectColors || typeof data.subjectColors !== "object") {
     data.subjectColors = {};
   }
+  migrateSubjectColorsMap(data.subjectColors);
   if (typeof data.schoolYear !== "string") {
     data.schoolYear = "";
   }
@@ -553,6 +578,7 @@ function normalizeLoaded(raw) {
     migratePersonToDays(data[key]);
     ensureDayBuckets(data[key]);
     stripNonLessonSlots(data[key]);
+    migratePersonColors(data[key]);
     if (data[key]?.subjectColors) delete data[key].subjectColors;
     if (typeof data[key].name !== "string" || !data[key].name.trim()) {
       data[key].name = `Klasse ${i + 1}`;
@@ -1018,7 +1044,7 @@ function addLessonSlot(personKey) {
     end: EMPTY_TIME,
     label: `${formatTime(EMPTY_TIME)} - ${formatTime(EMPTY_TIME)}`,
     subject: "",
-    color: "white",
+    color: "turquoise",
     room: "",
   });
   render();
@@ -1145,7 +1171,7 @@ function renderEditCell(person, slot, slotIndex, removeBtn, shell) {
     color.appendChild(opt);
   }
   const initialSubject = slot?.subject || "";
-  color.value = subjectColor(initialSubject, slot?.color || "white");
+  color.value = subjectColor(initialSubject, slot?.color || "turquoise");
   applyEditCellColor(colorShell, color.value);
 
   const syncFieldColor = (colorKey) => {
@@ -1156,7 +1182,7 @@ function renderEditCell(person, slot, slotIndex, removeBtn, shell) {
     const s = getSlot();
     s.subject = subject.value.trim();
     if (s.subject) {
-      const mapped = subjectColor(s.subject, s.color || "white");
+      const mapped = subjectColor(s.subject, s.color || "turquoise");
       s.color = mapped;
       color.value = mapped;
       syncFieldColor(mapped);
@@ -1254,6 +1280,7 @@ function cancelEdit() {
 function sanitize(data) {
   const out = clone(data);
   if (!out.subjectColors) out.subjectColors = {};
+  migrateSubjectColorsMap(out.subjectColors);
   let keys = classKeys(out);
   if (keys.length < MIN_CLASSES) {
     out.classes = ["c1"];
@@ -1296,10 +1323,10 @@ function sanitize(data) {
         slot.subject = subject;
         if (room) slot.room = room;
         else delete slot.room;
-        let color = slot.color || "white";
+        let color = migrateColorKey(slot.color);
         if (subject && out.subjectColors[subject]) {
-          color = out.subjectColors[subject];
-        } else if (subject && color && color !== "white") {
+          color = migrateColorKey(out.subjectColors[subject]);
+        } else if (subject && color && color !== "turquoise") {
           out.subjectColors[subject] = color;
         }
         slot.color = color;

@@ -24,7 +24,7 @@
   --c-pink: #e889b0;
   --c-brown: #8a6238;
   --c-grey: #8a9196;
-  --c-white: #ffffff;
+  --c-turquoise: #2ecfc4;
 }
 
 *,
@@ -901,8 +901,12 @@ body {
   background: var(--c-grey);
   color: #fff;
 }
+.bg-turquoise {
+  background: var(--c-turquoise);
+}
+/* Legacy white subjects map to turquoise */
 .bg-white {
-  background: var(--c-white);
+  background: var(--c-turquoise);
 }
 
 @keyframes rise {
