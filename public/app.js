@@ -144,29 +144,21 @@ function migratePersonToDays(person) {
   for (const day of WEEKDAYS) {
     const daySlotsList = [];
     for (const slot of sharedSlots) {
+      // Manual pauses are dropped — gaps are derived at render time
+      if (slot.type !== "lesson") continue;
       const baseId = slot.id || `s${daySlotsList.length}`;
-      if (slot.type === "lesson") {
-        const cell = grid[slot.id]?.[day.key] || null;
-        daySlotsList.push({
-          id: `${baseId}-${day.key}`,
-          n: slot.n,
-          type: "lesson",
-          start: slot.start,
-          end: slot.end,
-          label: slot.label,
-          subject: cell?.subject ? String(cell.subject) : "",
-          color: cell?.color || "white",
-          room: cell?.room ? String(cell.room) : "",
-        });
-      } else {
-        daySlotsList.push({
-          id: `${baseId}-${day.key}`,
-          type: slot.type || "pause",
-          start: slot.start,
-          end: slot.end,
-          label: slot.label,
-        });
-      }
+      const cell = grid[slot.id]?.[day.key] || null;
+      daySlotsList.push({
+        id: `${baseId}-${day.key}`,
+        n: slot.n,
+        type: "lesson",
+        start: slot.start,
+        end: slot.end,
+        label: slot.label,
+        subject: cell?.subject ? String(cell.subject) : "",
+        color: cell?.color || "white",
+        room: cell?.room ? String(cell.room) : "",
+      });
     }
     days[day.key] = { slots: daySlotsList };
   }
@@ -198,6 +190,57 @@ function daySlots(person, dayKey = activeDay) {
   ensureDayBuckets(person);
   return person.days[dayKey]?.slots || [];
 }
+
+/** Drop stored pause/lunsj rows — pauses are derived from lesson gaps. */
+function stripNonLessonSlots(person) {
+  if (!person) return;
+  if (hasLegacySlotsGrid(person)) migratePersonToDays(person);
+  ensureDayBuckets(person);
+  for (const day of WEEKDAYS) {
+    const slots = person.days[day.key].slots || [];
+    person.days[day.key].slots = slots.filter((s) => s && s.type === "lesson");
+  }
+}
+
+function stripAllNonLessonSlots(data) {
+  if (!data) return;
+  for (const key of classKeys(data)) {
+    stripNonLessonSlots(data[key]);
+  }
+}
+
+/**
+ * Build render timeline for a day: lessons plus auto «Pause» rows for gaps
+ * where lesson A ends before lesson B starts (both times non-midnight).
+ */
+function buildDayTimeline(person, dayKey, { namedOnly = false } = {}) {
+  const slots = daySlots(person, dayKey);
+  const lessons = [];
+  slots.forEach((slot, index) => {
+    if (!slot || slot.type !== "lesson") return;
+    if (namedOnly && !String(slot.subject || "").trim()) return;
+    lessons.push({ slot, index });
+  });
+  const out = [];
+  for (let i = 0; i < lessons.length; i++) {
+    if (i > 0) {
+      const prev = lessons[i - 1].slot;
+      const curr = lessons[i].slot;
+      const prevEnd = timeToMinutes(prev.end);
+      const currStart = timeToMinutes(curr.start);
+      if (prevEnd > 0 && currStart > 0 && prevEnd < currStart) {
+        out.push({
+          kind: "pause",
+          start: normalizeTime(prev.end),
+          end: normalizeTime(curr.start),
+        });
+      }
+    }
+    out.push({ kind: "lesson", slot: lessons[i].slot, index: lessons[i].index });
+  }
+  return out;
+}
+
 
 function defaultDayKey(now = new Date()) {
   let jsDay = now.getDay();
@@ -509,6 +552,7 @@ function normalizeLoaded(raw) {
   keys.forEach((key, i) => {
     migratePersonToDays(data[key]);
     ensureDayBuckets(data[key]);
+    stripNonLessonSlots(data[key]);
     if (data[key]?.subjectColors) delete data[key].subjectColors;
     if (typeof data[key].name !== "string" || !data[key].name.trim()) {
       data[key].name = `Klasse ${i + 1}`;
@@ -871,26 +915,20 @@ function renderSingleDay(personKey, personData) {
   const list = document.createElement("div");
   list.className = "lesson-list";
 
-  const slots = daySlots(personData, day.key);
+  // View: only named lessons (+ auto pauses between them).
+  // Edit: all lesson rows; auto pauses shown read-only between timed lessons.
+  const timeline = buildDayTimeline(personData, day.key, {
+    namedOnly: !editing,
+  });
 
-  slots.forEach((slot, slotIndex) => {
-    if (slot.type !== "lesson") {
-      // I visning: hopp over pause/lunsj som ikke ligger mellom synlige timer
-      if (
-        !editing &&
-        !breakTouchesNamedLesson(personData, day.key, slotIndex)
-      ) {
-        return;
-      }
-      list.appendChild(renderBreakRow(personKey, slot, slotIndex));
-      return;
+  for (const item of timeline) {
+    if (item.kind === "pause") {
+      list.appendChild(renderAutoPause(item.start, item.end));
+      continue;
     }
 
-    const hasSubject = Boolean(String(slot.subject || "").trim());
-    // Vis ikke timer uten fagnavn (unntatt i redigering)
-    if (!editing && !hasSubject) {
-      return;
-    }
+    const slot = item.slot;
+    const slotIndex = item.index;
 
     const row = document.createElement("div");
     row.className = "lesson";
@@ -912,7 +950,7 @@ function renderSingleDay(personKey, personData) {
       row.appendChild(renderViewCell(slot));
     }
     list.appendChild(row);
-  });
+  }
 
   if (editing) {
     const actions = document.createElement("div");
@@ -924,14 +962,7 @@ function renderSingleDay(personKey, personData) {
     addLesson.textContent = "Legg til time";
     addLesson.addEventListener("click", () => addLessonSlot(personKey));
 
-    const addPause = document.createElement("button");
-    addPause.type = "button";
-    addPause.className = "add-lesson add-pause";
-    addPause.textContent = "Legg til pause";
-    addPause.addEventListener("click", () => addPauseSlot(personKey));
-
-    // Time above pause
-    actions.append(addLesson, addPause);
+    actions.append(addLesson);
     list.appendChild(actions);
   } else if (!list.children.length) {
     const empty = el(
@@ -944,31 +975,6 @@ function renderSingleDay(personKey, personData) {
 
   card.appendChild(list);
   root.appendChild(card);
-}
-
-function hasNamedLesson(person, dayKey, slot) {
-  if (!slot || slot.type !== "lesson") return false;
-  return Boolean(String(slot.subject || "").trim());
-}
-
-/** Vis pause bare mellom navngitte timer — ikke først eller sist på dagen */
-function breakTouchesNamedLesson(person, dayKey, breakIndex) {
-  const slots = daySlots(person, dayKey);
-  let before = false;
-  let after = false;
-  for (let i = breakIndex - 1; i >= 0; i--) {
-    if (slots[i].type === "lesson") {
-      before = hasNamedLesson(person, dayKey, slots[i]);
-      break;
-    }
-  }
-  for (let i = breakIndex + 1; i < slots.length; i++) {
-    if (slots[i].type === "lesson") {
-      after = hasNamedLesson(person, dayKey, slots[i]);
-      break;
-    }
-  }
-  return before && after;
 }
 
 function renumberDayLessons(person, dayKey) {
@@ -990,6 +996,8 @@ function removeSlot(personKey, slotIndex) {
   if (!draft) return;
   const person = draft[personKey];
   const slots = daySlots(person, activeDay);
+  const target = slots[slotIndex];
+  if (!target || target.type !== "lesson") return;
   slots.splice(slotIndex, 1);
   renumberLessons(personKey, activeDay);
   render();
@@ -998,6 +1006,7 @@ function removeSlot(personKey, slotIndex) {
 function addLessonSlot(personKey) {
   if (!draft) return;
   const person = draft[personKey];
+  stripNonLessonSlots(person);
   const slots = daySlots(person, activeDay);
   const lessonCount = slots.filter((s) => s.type === "lesson").length;
   const id = `x${Date.now().toString(36)}-${activeDay}`;
@@ -1015,84 +1024,18 @@ function addLessonSlot(personKey) {
   render();
 }
 
-function addPauseSlot(personKey) {
-  if (!draft) return;
-  const person = draft[personKey];
-  const slots = daySlots(person, activeDay);
-  const id = `p${Date.now().toString(36)}-${activeDay}`;
-  slots.push({
-    id,
-    type: "pause",
-    start: EMPTY_TIME,
-    end: EMPTY_TIME,
-    label: "Pause",
-  });
-  render();
-}
-
-function pauseDisplayName(slot) {
-  const label = String(slot?.label || "").trim();
-  if (label) return label;
-  if (slot?.type === "lunsj") return "Lunsj";
-  if (slot?.type === "pause") return "Pause";
-  return "Pause";
-}
-
-function renderBreakRow(personKey, slot, slotIndex) {
-  if (editing) {
-    // Same shell as lessons: striped field covers times + name/× (no Rom)
-    const row = document.createElement("div");
-    row.className = "lesson break-lesson lesson-edit";
-
-    row.appendChild(renderTimeCell(personKey, slot, slotIndex));
-
-    const body = document.createElement("div");
-    body.className = "lesson-body edit-cell break-edit-cell";
-
-    const main = document.createElement("div");
-    main.className = "edit-row-main";
-
-    const name = document.createElement("input");
-    name.className = "subject-input pause-name-input";
-    name.placeholder = "Pause";
-    const rawLabel = String(slot?.label || "").trim();
-    // Default «Pause» stays as gray placeholder, not filled text
-    name.value =
-      !rawLabel || rawLabel.toLowerCase() === "pause" ? "" : rawLabel;
-    name.setAttribute("aria-label", "Pausenavn");
-    name.addEventListener("input", () => {
-      const value = name.value.trim();
-      const slots = daySlots(draft[personKey], activeDay);
-      slots[slotIndex].label = value || "Pause";
-      const lower = value.toLowerCase();
-      slots[slotIndex].type = lower === "lunsj" ? "lunsj" : "pause";
-    });
-
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "remove-slot";
-    remove.setAttribute("aria-label", "Fjern pause");
-    remove.textContent = "×";
-    remove.addEventListener("click", () => removeSlot(personKey, slotIndex));
-
-    const controls = document.createElement("div");
-    controls.className = "edit-row-controls break-edit-controls";
-    controls.append(remove);
-
-    main.append(name, controls);
-    body.append(main);
-    row.appendChild(body);
-    return row;
-  }
-
+/** Read-only auto pause from a lesson gap — always named «Pause». */
+function renderAutoPause(start, end) {
   const br = document.createElement("div");
   br.className = "break-row break-view";
   const time = document.createElement("div");
   time.className = "lesson-time";
-  time.appendChild(el("span", "lbl", slotDisplayLabel(slot)));
+  time.appendChild(
+    el("span", "lbl", `${formatTime(start)} - ${formatTime(end)}`)
+  );
   const body = document.createElement("div");
   body.className = "break-body";
-  body.textContent = pauseDisplayName(slot);
+  body.textContent = "Pause";
   br.append(time, body);
   return br;
 }
@@ -1293,6 +1236,7 @@ function enterEdit() {
   for (const key of draft.classes) {
     delete draft[key].subjectColors;
     migratePersonToDays(draft[key]);
+    stripNonLessonSlots(draft[key]);
   }
   ensureActivePerson(draft);
   editing = true;
@@ -1337,43 +1281,29 @@ function sanitize(data) {
     delete out[person].slots;
     delete out[person].grid;
 
+    stripNonLessonSlots(out[person]);
     for (const day of WEEKDAYS) {
-      const slots = out[person].days[day.key].slots;
+      const slots = out[person].days[day.key].slots.filter(
+        (s) => s && s.type === "lesson"
+      );
       for (const slot of slots) {
+        slot.type = "lesson";
         slot.start = normalizeTime(slot.start);
         slot.end = normalizeTime(slot.end);
-        if (slot.type === "lesson") {
-          slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
-          const subject = String(slot.subject || "").trim();
-          const room = String(slot.room || "").trim();
-          slot.subject = subject;
-          if (room) slot.room = room;
-          else delete slot.room;
-          let color = slot.color || "white";
-          if (subject && out.subjectColors[subject]) {
-            color = out.subjectColors[subject];
-          } else if (subject && color && color !== "white") {
-            out.subjectColors[subject] = color;
-          }
-          slot.color = color;
-          delete slot.teacher;
-        } else {
-          const pauseName = String(slot.label || "").trim();
-          // Recover if an older sanitize overwrote pause names with times
-          if (
-            !pauseName ||
-            /^\d{1,2}[.:]\d{2}\s*[-–]\s*\d{1,2}[.:]\d{2}$/.test(pauseName)
-          ) {
-            slot.label = slot.type === "lunsj" ? "Lunsj" : "Pause";
-          } else {
-            slot.label = pauseName;
-          }
-          delete slot.subject;
-          delete slot.color;
-          delete slot.room;
-          delete slot.n;
-          delete slot.teacher;
+        slot.label = `${formatTime(slot.start)} - ${formatTime(slot.end)}`;
+        const subject = String(slot.subject || "").trim();
+        const room = String(slot.room || "").trim();
+        slot.subject = subject;
+        if (room) slot.room = room;
+        else delete slot.room;
+        let color = slot.color || "white";
+        if (subject && out.subjectColors[subject]) {
+          color = out.subjectColors[subject];
+        } else if (subject && color && color !== "white") {
+          out.subjectColors[subject] = color;
         }
+        slot.color = color;
+        delete slot.teacher;
       }
       out[person].days[day.key].slots = sortSlotsChronologically(slots);
       renumberDayLessons(out[person], day.key);
